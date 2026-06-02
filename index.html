@@ -711,14 +711,46 @@ function analyze(type){
 
 /* ---- 체형 분석(촬영 → 분석 → 리포트) ---- */
 const poseMsgs = ['관절 좌표를 정밀 측정하는 중...','어깨·골반 정렬을 계산하는 중...','좌우 균형을 분석하는 중...','교정 운동을 구성하는 중...'];
-function openPosture(){ go('postureGuide'); if(window.startPoseCamera) window.startPoseCamera(); }
+
+/* 카메라는 메인 스크립트에서 직접 켠다 (AI 모듈이 실패해도 영상은 나오게) */
+let camStream = null, camVideo = null, camFacing = 'user';
+async function startCamera(){
+  camVideo = document.getElementById('camVideo');
+  const canvas = document.getElementById('camCanvas');
+  const status = document.getElementById('camStatus');
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    status.textContent = '⚠ 이 브라우저는 카메라를 지원하지 않아요.'; return;
+  }
+  try{
+    status.textContent = '카메라를 켜는 중...';
+    camStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode: camFacing, width:{ideal:720}, height:{ideal:960} }, audio:false });
+    camVideo.srcObject = camStream;
+    await camVideo.play();
+    document.getElementById('camStage').classList.toggle('mirror', camFacing==='user');
+    const sync = ()=>{ const st=document.getElementById('camStage'); if(camVideo.videoWidth){ st.style.aspectRatio = camVideo.videoWidth+' / '+camVideo.videoHeight; canvas.width = camVideo.videoWidth; canvas.height = camVideo.videoHeight; } };
+    if(camVideo.videoWidth) sync(); else camVideo.addEventListener('loadedmetadata', sync, { once:true });
+    status.textContent = '몸 전체가 보이게 서주세요 (AI 분석 준비 중...)';
+    if(window.startPoseAI) window.startPoseAI(camVideo);
+    else status.textContent = '몸 전체가 보이게 서주세요';
+  }catch(err){
+    status.textContent = '⚠ 카메라 권한이 거부됐어요. 주소창의 카메라 아이콘에서 "허용"으로 바꾼 뒤 다시 시도해주세요.';
+  }
+}
+function stopCamera(){
+  if(window.stopPoseAI) window.stopPoseAI();
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream = null; }
+  const c = document.getElementById('camCanvas'); if(c){ const x=c.getContext('2d'); if(x) x.clearRect(0,0,c.width,c.height); }
+}
+window.switchCamera = function(){ camFacing = (camFacing==='user') ? 'environment' : 'user'; stopCamera(); startCamera(); };
+
+function openPosture(){ go('postureGuide'); startCamera(); }
 function capturePosture(){
   const lm = window.getLatestLandmarks ? window.getLatestLandmarks() : null;
-  if(window.stopPoseCamera) window.stopPoseCamera();
+  stopCamera();
   const p = (lm && lm.length>24) ? computePosture(lm) : fakePosture(current);
   runLoad(poseMsgs, ()=>{ renderPosture(p); go('postureResult'); });
 }
-function closePosture(){ if(window.stopPoseCamera) window.stopPoseCamera(); go('category'); }
+function closePosture(){ stopCamera(); go('category'); }
 
 function tagFor(value, goodMax, warnMax){
   if(value<=goodMax) return ['good','정상'];
@@ -814,56 +846,40 @@ setInterval(tick,1000); tick();
 renderMembers();
 </script>
 
-<!-- ===================== 카메라 + MediaPipe 자세 인식 엔진 ===================== -->
+<!-- ===================== MediaPipe 자세 인식 엔진 (영상 위에 관절점 얹기) ===================== -->
 <script type="module">
-import { PoseLandmarker, FilesetResolver, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/vision_bundle.mjs";
+import { PoseLandmarker, FilesetResolver, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/vision_bundle.mjs";
 
-let pose = null, dutils = null, video, canvas, ctx, stream = null, raf = null;
-let facing = 'user', latest = null, ready = false;
+let pose = null, dutils = null, raf = null, latest = null, running = false, vid = null, canvas = null, ctx = null;
 const setStatus = (t)=>{ const e = document.getElementById('camStatus'); if(e) e.textContent = t; };
 
 async function ensurePose(){
   if(pose) return;
-  const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm");
+  const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm");
   const opt = (delegate)=>({ baseOptions:{ modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task", delegate }, runningMode:"VIDEO", numPoses:1 });
   try { pose = await PoseLandmarker.createFromOptions(vision, opt("GPU")); }
   catch(e){ pose = await PoseLandmarker.createFromOptions(vision, opt("CPU")); }
 }
 
-window.startPoseCamera = async function(){
-  video = document.getElementById('camVideo');
+/* 메인 스크립트(startCamera)가 영상을 켠 뒤 이 함수를 호출한다 */
+window.startPoseAI = async function(video){
+  vid = video;
   canvas = document.getElementById('camCanvas');
-  if(!video || !canvas) return;
   ctx = canvas.getContext('2d');
   dutils = dutils || new DrawingUtils(ctx);
-  try {
-    setStatus('카메라를 켜는 중...');
-    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode: facing, width:{ideal:720}, height:{ideal:960} }, audio:false });
-    video.srcObject = stream;
-    await video.play();
-    document.getElementById('camStage').classList.toggle('mirror', facing==='user');
-    video.addEventListener('loadedmetadata', ()=>{
-      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-      const st = document.getElementById('camStage');
-      if(st && video.videoWidth) st.style.aspectRatio = video.videoWidth + ' / ' + video.videoHeight;
-    }, { once:true });
-    setStatus('AI 모델을 불러오는 중... (처음엔 몇 초 걸려요)');
-    await ensurePose();
-    ready = true;
-    setStatus('몸 전체가 화면에 들어오게 서주세요');
-    loop();
-  } catch(err){
-    setStatus('⚠ 카메라를 사용할 수 없어요. 브라우저 카메라 권한을 허용해 주세요. (촬영 시 데모 데이터로 진행됩니다)');
-    ready = false;
-  }
+  try { await ensurePose(); }
+  catch(e){ setStatus('몸 전체가 보이게 서주세요 (AI 모델 로드 실패 — 촬영은 가능)'); return; }
+  running = true;
+  setStatus('몸 전체가 보이게 서주세요');
+  loop();
 };
 
 function loop(){
-  if(!ready) return;
-  if(pose && video.readyState >= 2){
+  if(!running) return;
+  if(pose && vid && vid.readyState >= 2 && canvas.width){
     let res = null;
-    try { res = pose.detectForVideo(video, performance.now()); } catch(e){}
-    if(res && res.landmarks && res.landmarks.length){ latest = res.landmarks[0]; } else { latest = null; }
+    try { res = pose.detectForVideo(vid, performance.now()); } catch(e){}
+    latest = (res && res.landmarks && res.landmarks.length) ? res.landmarks[0] : null;
     ctx.save();
     ctx.clearRect(0,0,canvas.width,canvas.height);
     if(res && res.landmarks){
@@ -873,24 +889,15 @@ function loop(){
       }
     }
     ctx.restore();
-    if(latest && document.getElementById('camStatus') && document.getElementById('camStatus').textContent.indexOf('서주세요')>=0){
-      setStatus('✅ 인식됨 · "촬영·분석"을 눌러주세요');
-    }
+    if(latest) setStatus('✅ 인식됨 · "촬영·분석"을 눌러주세요');
   }
   raf = requestAnimationFrame(loop);
 }
 
 window.getLatestLandmarks = ()=> latest;
-window.stopPoseCamera = function(){
-  ready = false;
+window.stopPoseAI = function(){
+  running = false; latest = null;
   if(raf){ cancelAnimationFrame(raf); raf = null; }
-  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream = null; }
-  if(ctx && canvas){ ctx.clearRect(0,0,canvas.width,canvas.height); }
-};
-window.switchCamera = async function(){
-  facing = (facing==='user') ? 'environment' : 'user';
-  window.stopPoseCamera();
-  await window.startPoseCamera();
 };
 </script>
 </body>
