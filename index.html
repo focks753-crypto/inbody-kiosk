@@ -229,7 +229,11 @@
     border-radius: 24px; overflow: hidden; box-shadow: 0 0 0 2px rgba(56,189,248,.35), 0 20px 50px rgba(0,0,0,.45); }
   .cam-stage video, .cam-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .cam-stage.mirror video, .cam-stage.mirror canvas { transform: scaleX(-1); }
-  .cam-frame { position: absolute; inset: 12px; border: 2px dashed rgba(56,189,248,.55); border-radius: 18px; pointer-events: none; }
+  .cam-frame { position: absolute; inset: 12px; border: 2px dashed rgba(56,189,248,.55); border-radius: 18px; pointer-events: none; transition: border-color .3s; }
+  .cam-guide { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .cam-guide .guideFig { fill: #38bdf8; opacity: .22; transition: fill .3s ease; }
+  .cam-stage.detected .cam-guide .guideFig { fill: #22c55e; }
+  .cam-stage.detected .cam-frame { border-color: rgba(34,197,94,.75); }
   .cam-actions { display: flex; gap: 14px; margin-top: 24px; align-items: center; }
   .cam-actions .shoot-btn { margin-top: 0; }
   .cam-switch { border: none; cursor: pointer; background: rgba(255,255,255,.14); color: #fff; font-weight: 800;
@@ -358,6 +362,17 @@
     <div class="cam-stage" id="camStage">
       <video id="camVideo" playsinline autoplay muted></video>
       <canvas id="camCanvas"></canvas>
+      <svg class="cam-guide" viewBox="0 0 240 440" preserveAspectRatio="xMidYMid meet">
+        <g class="guideFig">
+          <circle cx="120" cy="56" r="30"/>
+          <rect x="112" y="82" width="16" height="16" rx="7"/>
+          <path d="M76 106 Q120 86 164 106 L150 214 Q120 228 90 214 Z"/>
+          <rect x="62" y="104" width="17" height="150" rx="8" transform="rotate(20 70 110)"/>
+          <rect x="161" y="104" width="17" height="150" rx="8" transform="rotate(-20 170 110)"/>
+          <rect x="98" y="210" width="18" height="206" rx="9" transform="rotate(4 107 212)"/>
+          <rect x="124" y="210" width="18" height="206" rx="9" transform="rotate(-4 133 212)"/>
+        </g>
+      </svg>
       <div class="cam-frame"></div>
     </div>
     <div class="scan-title">정면을 바라보고 서주세요</div>
@@ -740,6 +755,7 @@ function stopCamera(){
   if(window.stopPoseAI) window.stopPoseAI();
   if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream = null; }
   const c = document.getElementById('camCanvas'); if(c){ const x=c.getContext('2d'); if(x) x.clearRect(0,0,c.width,c.height); }
+  const st = document.getElementById('camStage'); if(st) st.classList.remove('detected');
 }
 window.switchCamera = function(){ camFacing = (camFacing==='user') ? 'environment' : 'user'; stopCamera(); startCamera(); };
 
@@ -880,6 +896,8 @@ function loop(){
     let res = null;
     try { res = pose.detectForVideo(vid, performance.now()); } catch(e){}
     latest = (res && res.landmarks && res.landmarks.length) ? res.landmarks[0] : null;
+    const stage = document.getElementById('camStage');
+    if(stage) stage.classList.toggle('detected', !!latest);
     ctx.save();
     ctx.clearRect(0,0,canvas.width,canvas.height);
     if(res && res.landmarks){
