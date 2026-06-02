@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>InBody 스마트 키오스크</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root {
+    --blue: #2563eb;
+    --cyan: #06b6d4;
+    --ink: #0f172a;
+    --slate: #64748b;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --good: #10b981;
+    --warn: #f59e0b;
+    --bad: #ef4444;
+    --grad: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    overflow: hidden;
+    user-select: none;
+  }
+  #app { height: 100vh; width: 100vw; position: relative; }
+
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    padding: 48px 64px;
+    opacity: 0; pointer-events: none;
+    transform: translateY(16px);
+    transition: opacity .45s ease, transform .45s ease;
+  }
+  .screen.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+  /* ---------- Top bar ---------- */
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .brand { display: flex; align-items: center; gap: 14px; font-weight: 800; font-size: 26px; letter-spacing: -.5px; }
+  .brand .dot {
+    width: 42px; height: 42px; border-radius: 12px; background: var(--grad);
+    display: grid; place-items: center; color: #fff; font-size: 22px; font-weight: 900;
+    box-shadow: 0 8px 20px rgba(37,99,235,.35);
+  }
+  .clock { text-align: right; color: var(--slate); font-weight: 600; }
+  .clock .t { font-size: 22px; color: var(--ink); font-weight: 800; }
+
+  .btn-back {
+    border: none; background: #fff; color: var(--slate); font-weight: 700; font-size: 18px;
+    padding: 12px 22px; border-radius: 999px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,.05);
+  }
+  .btn-back:active { transform: scale(.96); }
+
+  /* ---------- Start screen ---------- */
+  #start { background: var(--grad); color: #fff; align-items: center; justify-content: center; text-align: center; }
+  #start .topbar { position: absolute; top: 48px; left: 64px; right: 64px; }
+  #start .brand, #start .clock .t { color: #fff; }
+  #start .clock { color: rgba(255,255,255,.8); }
+  #start .dot { background: #fff; color: var(--blue); box-shadow: none; }
+  .hero-title { font-size: 64px; font-weight: 900; letter-spacing: -2px; line-height: 1.1; }
+  .hero-sub { font-size: 24px; opacity: .9; margin-top: 18px; font-weight: 500; }
+  .start-btn {
+    margin-top: 56px; border: none; cursor: pointer;
+    background: #fff; color: var(--blue); font-weight: 900; font-size: 30px;
+    padding: 30px 80px; border-radius: 999px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.25);
+    transition: transform .15s ease;
+    animation: pulse 2.4s infinite;
+  }
+  .start-btn:active { transform: scale(.95); }
+  @keyframes pulse { 0%,100%{ box-shadow:0 20px 50px rgba(0,0,0,.25);} 50%{ box-shadow:0 20px 70px rgba(0,0,0,.4);} }
+
+  /* ---------- Headings ---------- */
+  .head { margin: 12px 0 18px; flex-shrink: 0; }
+  .head h1 { font-size: 36px; font-weight: 900; letter-spacing: -1px; }
+  .head p { color: var(--slate); font-size: 18px; margin-top: 6px; font-weight: 500; }
+
+  /* ---------- Member grid ---------- */
+  .member-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; overflow-y: auto; padding-bottom: 20px; }
+  .member-card {
+    background: var(--card); border-radius: 24px; padding: 28px; cursor: pointer;
+    display: flex; align-items: center; gap: 20px;
+    box-shadow: 0 6px 18px rgba(15,23,42,.06); border: 2px solid transparent;
+    transition: transform .15s ease, border-color .15s ease;
+  }
+  .member-card:active { transform: scale(.97); border-color: var(--blue); }
+  .avatar { width: 64px; height: 64px; border-radius: 18px; background: var(--grad); color:#fff;
+    display: grid; place-items: center; font-size: 26px; font-weight: 800; flex-shrink: 0; }
+  .member-card .info .name { font-size: 24px; font-weight: 800; }
+  .member-card .info .meta { color: var(--slate); font-size: 16px; margin-top: 4px; font-weight: 500; }
+
+  /* ---------- Category ---------- */
+  .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr);
+    gap: 20px; flex: 1; min-height: 0; padding-bottom: 4px; }
+  .cat-card {
+    background: var(--card); border-radius: 26px; padding: 16px; cursor: pointer; text-align: center;
+    box-shadow: 0 10px 28px rgba(15,23,42,.08); border: 2px solid transparent;
+    transition: transform .15s ease, border-color .15s ease;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    min-height: 0; overflow: hidden;
+  }
+  .cat-card:active { transform: scale(.97); border-color: var(--blue); }
+  .cat-ico { width: 72px; height: 72px; border-radius: 20px; display: grid; place-items: center; font-size: 38px; flex-shrink: 0; }
+  .cat-card h2 { font-size: 24px; font-weight: 900; }
+  .cat-card p { color: var(--slate); font-size: 15px; font-weight: 500; line-height: 1.45; }
+
+  /* ---------- Options (운동 조건 선택) ---------- */
+  .opt-scroll { flex: 1; overflow-y: auto; padding-right: 8px; }
+  .opt-section { margin-bottom: 30px; }
+  .opt-section .lbl { font-size: 22px; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+  .opt-section .lbl .em { font-size: 26px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 14px; }
+  .chip {
+    background: #fff; border: 2px solid #e2e8f0; border-radius: 18px; padding: 18px 28px;
+    font-size: 20px; font-weight: 800; cursor: pointer; transition: all .15s ease; text-align: center; min-width: 130px;
+  }
+  .chip:active { transform: scale(.96); }
+  .chip.selected { background: var(--grad); color: #fff; border-color: transparent; box-shadow: 0 8px 20px rgba(37,99,235,.3); }
+  .chip .sub { display: block; font-size: 13px; font-weight: 600; opacity: .7; margin-top: 3px; }
+  .opt-note { background: #eff6ff; color: #1e40af; border-radius: 16px; padding: 18px 22px; font-size: 18px; font-weight: 600; line-height: 1.5; }
+  .opt-note b { font-weight: 800; }
+  .make-btn {
+    margin: 14px auto 6px; border: none; cursor: pointer; background: var(--grad); color: #fff;
+    font-weight: 900; font-size: 24px; padding: 22px 64px; border-radius: 999px;
+    box-shadow: 0 12px 30px rgba(37,99,235,.35); transition: transform .15s ease; flex-shrink: 0;
+  }
+  .make-btn:active { transform: scale(.97); }
+  .make-btn:disabled { cursor: not-allowed; box-shadow: none; }
+
+  /* ---------- Loading ---------- */
+  #loading { align-items: center; justify-content: center; text-align: center; }
+  .spinner {
+    width: 90px; height: 90px; border-radius: 50%;
+    border: 8px solid #e2e8f0; border-top-color: var(--blue);
+    animation: spin 1s linear infinite; margin-bottom: 32px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading h2 { font-size: 32px; font-weight: 900; }
+  #loading p { color: var(--slate); font-size: 20px; margin-top: 10px; }
+
+  /* ---------- Result ---------- */
+  #result { padding: 36px 56px; }
+  .result-wrap { display: grid; grid-template-columns: 380px 1fr; gap: 32px; flex: 1; overflow: hidden; }
+  .panel { background: var(--card); border-radius: 28px; padding: 30px; box-shadow: 0 8px 24px rgba(15,23,42,.06); overflow-y: auto; }
+
+  .score-ring { text-align: center; margin-bottom: 22px; }
+  .ring { width: 170px; height: 170px; margin: 0 auto 14px; position: relative; }
+  .ring svg { transform: rotate(-90deg); }
+  .ring .val { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; line-height: 1; }
+  .ring .val b { font-size: 48px; font-weight: 900; line-height: 1; display: block; }
+  .ring .val span { font-size: 14px; color: var(--slate); font-weight: 700; line-height: 1; }
+  .pname { font-size: 24px; font-weight: 800; }
+  .pmeta { color: var(--slate); font-size: 16px; margin-top: 4px; }
+
+  .metric { margin-top: 20px; }
+  .metric .row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .metric .row .label { font-weight: 700; font-size: 17px; }
+  .metric .row .num { font-weight: 800; font-size: 18px; }
+  .bar { height: 12px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; border-radius: 999px; background: var(--grad); }
+  .metric .tag { font-size: 13px; font-weight: 800; padding: 3px 10px; border-radius: 999px; }
+  .tag.good { background: #d1fae5; color: #047857; }
+  .tag.warn { background: #fef3c7; color: #b45309; }
+  .tag.bad  { background: #fee2e2; color: #b91c1c; }
+
+  /* AI panel */
+  .ai-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .ai-badge { background: var(--grad); color: #fff; font-weight: 800; font-size: 14px; padding: 6px 14px; border-radius: 999px; white-space: nowrap; }
+  .ai-head h2 { font-size: 26px; font-weight: 900; }
+  .ai-section { margin-top: 26px; }
+  .ai-section h3 { font-size: 21px; font-weight: 900; display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .ai-section h3 .em { font-size: 24px; }
+  .ai-item { background: #f8fafc; border-left: 4px solid var(--blue); border-radius: 0 14px 14px 0; padding: 16px 20px; }
+  .ai-item .d { color: var(--slate); font-size: 15px; line-height: 1.5; }
+
+  /* plan summary chips */
+  .plan-sum { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 6px; }
+  .plan-sum span { background: #eff6ff; color: var(--blue); font-weight: 800; font-size: 15px; padding: 8px 16px; border-radius: 999px; }
+
+  /* weekly routine */
+  .routine-grid { display: flex; flex-direction: column; gap: 12px; }
+  .day-card { background: #f8fafc; border-radius: 16px; padding: 15px 20px; border-left: 5px solid var(--blue); }
+  .day-card.rest { border-left-color: #cbd5e1; opacity: .65; }
+  .day-card.cardio { border-left-color: var(--cyan); }
+  .day-head { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+  .day-head .dow { width: 40px; height: 40px; border-radius: 12px; background: var(--grad); color: #fff;
+    display: grid; place-items: center; font-weight: 900; font-size: 19px; flex-shrink: 0; }
+  .day-card.rest .dow { background: #cbd5e1; }
+  .day-card.cardio .dow { background: linear-gradient(135deg,#06b6d4,#22d3ee); }
+  .day-head .focus { font-weight: 800; font-size: 18px; }
+  .day-card ul { list-style: none; }
+  .day-card li { display: flex; justify-content: space-between; align-items: baseline; font-size: 15px; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; }
+  .day-card li:last-child { border-bottom: none; }
+  .day-card li span { font-weight: 600; }
+  .day-card li b { color: var(--slate); font-weight: 700; font-size: 14px; white-space: nowrap; margin-left: 14px; }
+
+  /* meals */
+  .meal-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+  .meal { background: #f8fafc; border-radius: 16px; padding: 16px; }
+  .meal .when { font-weight: 900; font-size: 15px; color: var(--blue); }
+  .meal .food { font-size: 15px; margin-top: 6px; line-height: 1.5; font-weight: 600; }
+
+  /* ---------- Posture: scan guide (dark) ---------- */
+  #postureGuide { background: radial-gradient(ellipse at 50% 38%, #14233f 0%, #0a1120 72%); color: #fff; align-items: center; justify-content: center; text-align: center; }
+  #postureGuide .topbar { position: absolute; top: 48px; left: 64px; right: 64px; }
+  #postureGuide .clock .t { color: #fff; }
+  .scan-stage { position: relative; width: 280px; height: 420px; margin-bottom: 6px; }
+  .scan-stage svg { width: 100%; height: 100%; display: block; }
+  .scan-line { position: absolute; left: 6%; right: 6%; height: 3px; border-radius: 999px;
+    background: linear-gradient(90deg,transparent,#38bdf8,transparent); box-shadow: 0 0 18px #38bdf8;
+    animation: scan 2.8s ease-in-out infinite; }
+  @keyframes scan { 0%{top:8%}50%{top:86%}100%{top:8%} }
+  .scan-ground { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+    width: 200px; height: 34px; border-radius: 50%; background: radial-gradient(ellipse,rgba(56,189,248,.4),transparent 70%); }
+  .scan-title { font-size: 40px; font-weight: 900; letter-spacing: -1px; }
+  .scan-sub { font-size: 18px; opacity: .65; margin-top: 10px; }
+  .shoot-btn { margin-top: 32px; border: none; cursor: pointer; background: #fff; color: #0a1120;
+    font-weight: 900; font-size: 24px; padding: 22px 60px; border-radius: 999px;
+    box-shadow: 0 12px 30px rgba(56,189,248,.45); transition: transform .15s ease; }
+  .shoot-btn:active { transform: scale(.96); }
+  .scan-demo { position: absolute; bottom: 30px; font-size: 13px; opacity: .5; }
+
+  /* ---------- Posture: result ---------- */
+  .pose-diagram { margin-top: 18px; background: #f8fafc; border-radius: 18px; padding: 14px 14px 8px; }
+  .pose-diagram svg { width: 100%; height: 150px; }
+  .pose-legend { display: flex; justify-content: center; gap: 22px; margin-top: 4px; }
+  .pose-legend span { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--slate); }
+  .pose-legend i { width: 14px; height: 5px; border-radius: 999px; display: inline-block; }
+  .pose-metric { margin-top: 18px; }
+  .pose-metric .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; }
+  .pose-metric .top .label { font-weight: 800; font-size: 17px; }
+  .pose-track { position: relative; height: 12px; background: #e2e8f0; border-radius: 999px; }
+  .pose-track.sevgrad { background: linear-gradient(90deg,#10b981 0%,#a3e635 35%,#f59e0b 65%,#ef4444 100%); }
+  .pose-track .center { position: absolute; left: 50%; top: -4px; width: 2px; height: 20px; background: #94a3b8; transform: translateX(-1px); }
+  .pose-track .dot { position: absolute; top: 50%; width: 18px; height: 18px; border-radius: 50%; background: var(--blue);
+    transform: translate(-50%,-50%); box-shadow: 0 2px 6px rgba(37,99,235,.4); border: 2px solid #fff; }
+  .pose-desc { color: var(--slate); font-size: 14px; margin-top: 8px; font-weight: 600; }
+
+  .result-actions { display: flex; gap: 16px; margin-top: 24px; }
+  .act { flex: 1; border: none; cursor: pointer; font-weight: 800; font-size: 19px; padding: 20px; border-radius: 18px; }
+  .act.primary { background: var(--grad); color: #fff; box-shadow: 0 10px 24px rgba(37,99,235,.3); }
+  .act.ghost { background: #fff; color: var(--slate); box-shadow: 0 4px 12px rgba(0,0,0,.05); }
+  .act:active { transform: scale(.97); }
+
+  .mock-flag {
+    position: fixed; bottom: 14px; right: 18px; font-size: 12px; color: var(--slate);
+    background: rgba(255,255,255,.8); padding: 6px 12px; border-radius: 999px; font-weight: 700;
+  }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- START -->
+  <section id="start" class="screen active">
+    <div class="topbar">
+      <div class="brand"><div class="dot">B</div> InBody 스마트 분석</div>
+      <div class="clock"><div class="t" id="clock1">--:--</div><div id="date1">----</div></div>
+    </div>
+    <h1 class="hero-title">건강한 변화의 시작<br/>지금 측정하세요</h1>
+    <p class="hero-sub">인바디 측정 후 AI가 맞춤 운동·식단을 추천해드립니다</p>
+    <button class="start-btn" onclick="go('member')">측정 시작하기 →</button>
+  </section>
+
+  <!-- MEMBER -->
+  <section id="member" class="screen">
+    <div class="topbar">
+      <button class="btn-back" onclick="go('start')">← 처음으로</button>
+      <div class="clock"><div class="t" id="clock2">--:--</div></div>
+    </div>
+    <div class="head"><h1>회원을 선택해주세요</h1><p>본인의 이름을 터치하면 측정 결과를 불러옵니다</p></div>
+    <div class="member-grid" id="memberGrid"></div>
+  </section>
+
+  <!-- CATEGORY -->
+  <section id="category" class="screen">
+    <div class="topbar">
+      <button class="btn-back" onclick="go('member')">← 회원 선택</button>
+      <div class="clock"><div class="t" id="clock3">--:--</div></div>
+    </div>
+    <div class="head"><h1 id="catHello">무엇을 도와드릴까요?</h1><p>원하는 분석 항목을 선택해주세요</p></div>
+    <div class="cat-grid">
+      <div class="cat-card" onclick="openOptions('exercise')">
+        <div class="cat-ico" style="background:#dbeafe">🏋️</div>
+        <h2>운동 방향성</h2><p>조건을 선택하면<br/>주간 운동 루틴 생성</p>
+      </div>
+      <div class="cat-card" onclick="analyze('diet')">
+        <div class="cat-ico" style="background:#dcfce7">🥗</div>
+        <h2>맞춤 식단</h2><p>목표 달성을 위한<br/>하루 식단 가이드</p>
+      </div>
+      <div class="cat-card" onclick="openOptions('full')">
+        <div class="cat-ico" style="background:#fef3c7">📊</div>
+        <h2>종합 분석</h2><p>주간 운동 루틴 +<br/>식단을 한 번에</p>
+      </div>
+      <div class="cat-card" onclick="openPosture()">
+        <div class="cat-ico" style="background:#ede9fe">📷</div>
+        <h2>체형 분석</h2><p>카메라로 자세·균형<br/>측정 (데모)</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- OPTIONS (운동 조건 선택) -->
+  <section id="options" class="screen">
+    <div class="topbar">
+      <button class="btn-back" onclick="go('category')">← 다시 선택</button>
+      <div class="clock"><div class="t" id="clock5">--:--</div></div>
+    </div>
+    <div class="head"><h1>운동 계획을 세워볼게요</h1><p>선택하신 조건에 맞춰 월~일 주간 루틴을 짜드립니다</p></div>
+    <div class="opt-scroll">
+      <div class="opt-section">
+        <div class="lbl"><span class="em">📅</span> 일주일에 몇 번 운동하세요?</div>
+        <div class="chips">
+          <div class="chip" data-group="freq" onclick="pickChip(this,'freq',1)">주 1회<span class="sub">전신</span></div>
+          <div class="chip" data-group="freq" onclick="pickChip(this,'freq',2)">주 2회<span class="sub">2분할</span></div>
+          <div class="chip" data-group="freq" onclick="pickChip(this,'freq',3)">주 3회<span class="sub">3분할</span></div>
+          <div class="chip" data-group="freq" onclick="pickChip(this,'freq',4)">주 4회<span class="sub">4분할</span></div>
+          <div class="chip" data-group="freq" onclick="pickChip(this,'freq',5)">주 5회<span class="sub">5분할</span></div>
+          <div class="chip" data-group="freq" onclick="pickChip(this,'freq',6)">주 6회<span class="sub">PPL</span></div>
+        </div>
+      </div>
+      <div class="opt-section">
+        <div class="lbl"><span class="em">🏋️</span> 어떤 환경에서 운동하세요?</div>
+        <div class="chips">
+          <div class="chip" data-group="equip" onclick="pickChip(this,'equip','gym')">헬스장<span class="sub">머신·바벨 풀장비</span></div>
+          <div class="chip" data-group="equip" onclick="pickChip(this,'equip','home')">홈트<span class="sub">덤벨·밴드</span></div>
+          <div class="chip" data-group="equip" onclick="pickChip(this,'equip','body')">맨몸 운동<span class="sub">기구 없이</span></div>
+        </div>
+      </div>
+      <div class="opt-note">🏃 <b>유산소</b>는 회원님 인바디 결과(목표)에 맞춰 트레이너가 <b>자동으로 배치</b>해 드립니다.</div>
+    </div>
+    <button id="makeBtn" class="make-btn" disabled onclick="makeRoutine()">주간 루틴 만들기 →</button>
+  </section>
+
+  <!-- POSTURE GUIDE (체형 분석 촬영) -->
+  <section id="postureGuide" class="screen">
+    <div class="topbar">
+      <button class="btn-back" onclick="go('category')">← 다시 선택</button>
+      <div class="clock"><div class="t" id="clock6">--:--</div></div>
+    </div>
+    <div class="scan-stage">
+      <svg viewBox="0 0 240 440">
+        <defs>
+          <linearGradient id="bodyG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#7dd3fc"/><stop offset="1" stop-color="#1d4ed8"/>
+          </linearGradient>
+          <filter id="bodyGlow"><feGaussianBlur stdDeviation="5" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <g fill="url(#bodyG)" filter="url(#bodyGlow)" opacity="0.92">
+          <circle cx="120" cy="56" r="30"/>
+          <rect x="112" y="82" width="16" height="16" rx="7"/>
+          <path d="M76 106 Q120 86 164 106 L150 214 Q120 228 90 214 Z"/>
+          <rect x="62" y="104" width="17" height="150" rx="8" transform="rotate(20 70 110)"/>
+          <rect x="161" y="104" width="17" height="150" rx="8" transform="rotate(-20 170 110)"/>
+          <rect x="98" y="210" width="18" height="206" rx="9" transform="rotate(4 107 212)"/>
+          <rect x="124" y="210" width="18" height="206" rx="9" transform="rotate(-4 133 212)"/>
+        </g>
+      </svg>
+      <div class="scan-line"></div>
+      <div class="scan-ground"></div>
+    </div>
+    <div class="scan-title">정면을 바라보고 서주세요</div>
+    <div class="scan-sub">발을 어깨너비로 벌리고 카메라를 정면으로 바라봐 주세요</div>
+    <button class="shoot-btn" onclick="capturePosture()">📷 촬영하기</button>
+    <div class="scan-demo">※ 데모 화면입니다 · 실제 카메라(MediaPipe AI)는 추후 연결 예정</div>
+  </section>
+
+  <!-- LOADING -->
+  <section id="loading" class="screen">
+    <div class="spinner"></div>
+    <h2>AI가 분석하고 있어요</h2>
+    <p id="loadMsg">체성분 데이터를 해석하는 중...</p>
+  </section>
+
+  <!-- RESULT -->
+  <section id="result" class="screen">
+    <div class="topbar">
+      <button class="btn-back" onclick="goBackFromResult()">← 다시 선택</button>
+      <div class="brand" style="font-size:20px"><div class="dot" style="width:34px;height:34px;font-size:18px">B</div> 분석 리포트</div>
+      <div class="clock"><div class="t" id="clock4">--:--</div></div>
+    </div>
+    <div class="result-wrap">
+      <div class="panel" id="inbodyPanel"></div>
+      <div class="panel" id="aiPanel"></div>
+    </div>
+    <div class="result-actions">
+      <button class="act ghost" onclick="window.print()">🖨️ 결과 인쇄</button>
+      <button class="act primary" onclick="go('start')">완료 ✓</button>
+    </div>
+  </section>
+
+  <!-- POSTURE RESULT (체형 리포트) -->
+  <section id="postureResult" class="screen">
+    <div class="topbar">
+      <button class="btn-back" onclick="go('category')">← 다시 선택</button>
+      <div class="brand" style="font-size:20px"><div class="dot" style="width:34px;height:34px;font-size:18px">B</div> 체형 리포트</div>
+      <div class="clock"><div class="t" id="clock7">--:--</div></div>
+    </div>
+    <div class="result-wrap">
+      <div class="panel" id="poseLeft"></div>
+      <div class="panel" id="poseRight"></div>
+    </div>
+    <div class="result-actions">
+      <button class="act ghost" onclick="window.print()">🖨️ 결과 인쇄</button>
+      <button class="act primary" onclick="go('start')">완료 ✓</button>
+    </div>
+  </section>
+
+</div>
+<div class="mock-flag">⚠ 데모 버전 · 가짜 데이터 (실제 인바디 API 미연동)</div>
+
+<script>
+/* ===================== 가짜 회원 데이터 (나중에 InBody API로 교체) ===================== */
+const MEMBERS = [
+  { id:1, name:'김민수', age:34, sex:'남', height:175, weight:82.4, smm:33.1, bfp:24.8, bmi:26.9, score:74, target:'체지방 감량' },
+  { id:2, name:'이서연', age:28, sex:'여', height:162, weight:54.2, smm:21.0, bfp:27.5, bmi:20.6, score:81, target:'근육량 증가' },
+  { id:3, name:'박준호', age:41, sex:'남', height:180, weight:90.1, smm:34.8, bfp:28.2, bmi:27.8, score:68, target:'체중 감량' },
+  { id:4, name:'최지우', age:25, sex:'여', height:168, weight:58.0, smm:23.5, bfp:22.1, bmi:20.5, score:88, target:'바디 유지' },
+  { id:5, name:'정해린', age:37, sex:'여', height:159, weight:62.3, smm:19.8, bfp:33.4, bmi:24.6, score:61, target:'체지방 감량' },
+  { id:6, name:'강도현', age:30, sex:'남', height:178, weight:70.5, smm:32.0, bfp:14.2, bmi:22.2, score:92, target:'근력 향상' },
+];
+
+/* ===================== 운동 종목 DB (환경별) ===================== */
+const EXDB = {
+  gym: {
+    chest:[['벤치프레스','4세트 x 8-10회'],['인클라인 덤벨프레스','3세트 x 10-12회'],['체스트 플라이 머신','3세트 x 12-15회']],
+    back:[['랫풀다운','4세트 x 10-12회'],['바벨 로우','4세트 x 8-10회'],['시티드 케이블 로우','3세트 x 12회']],
+    shoulder:[['오버헤드 프레스','4세트 x 8-10회'],['사이드 레터럴 레이즈','4세트 x 15회'],['리어 델트 플라이','3세트 x 15회']],
+    legs:[['바벨 스쿼트','4세트 x 8-10회'],['레그 프레스','4세트 x 12회'],['레그 익스텐션','3세트 x 15회'],['레그 컬','3세트 x 12회']],
+    triceps:[['케이블 푸쉬다운','3세트 x 12-15회'],['라잉 트라이셉 익스텐션','3세트 x 12회']],
+    biceps:[['바벨 컬','3세트 x 10-12회'],['덤벨 해머컬','3세트 x 12회']],
+  },
+  home: {
+    chest:[['덤벨 플로어 프레스','4세트 x 10-12회'],['덤벨 플라이','3세트 x 12-15회'],['푸쉬업','3세트 x 최대반복']],
+    back:[['원암 덤벨 로우','4세트 x 10-12회'],['밴드 풀다운','3세트 x 15회'],['덤벨 풀오버','3세트 x 12회']],
+    shoulder:[['덤벨 숄더프레스','4세트 x 10-12회'],['사이드 레터럴 레이즈','4세트 x 15회'],['밴드 페이스풀','3세트 x 15회']],
+    legs:[['고블릿 스쿼트','4세트 x 12회'],['덤벨 런지','3세트 x 12회'],['루마니안 데드리프트','3세트 x 12회'],['카프 레이즈','3세트 x 20회']],
+    triceps:[['덤벨 킥백','3세트 x 12-15회'],['클로즈 푸쉬업','3세트 x 최대반복']],
+    biceps:[['덤벨 컬','3세트 x 12회'],['밴드 컬','3세트 x 15회']],
+  },
+  body: {
+    chest:[['푸쉬업','4세트 x 최대반복'],['와이드 푸쉬업','3세트 x 최대반복'],['디클라인 푸쉬업','3세트 x 최대반복']],
+    back:[['풀업 (또는 테이블 로우)','4세트 x 최대반복'],['인버티드 로우','3세트 x 12회'],['슈퍼맨','3세트 x 15회']],
+    shoulder:[['파이크 푸쉬업','4세트 x 10-12회'],['핸드스탠드 홀드','3세트 x 30초']],
+    legs:[['맨몸 스쿼트','4세트 x 20회'],['점프 스쿼트','3세트 x 15회'],['불가리안 스플릿 스쿼트','3세트 x 12회'],['카프 레이즈','3세트 x 25회']],
+    triceps:[['다이아몬드 푸쉬업','3세트 x 최대반복'],['벤치 딥스','3세트 x 15회']],
+    biceps:[['친업','3세트 x 최대반복'],['타월 컬','3세트 x 15회']],
+  }
+};
+
+/* 분할 구성 (주간 횟수별) */
+function splitFor(freq){
+  switch(freq){
+    case 1: return [{name:'전신',muscles:['chest','back','legs','shoulder']}];
+    case 2: return [{name:'상체',muscles:['chest','back','shoulder','biceps']},{name:'하체',muscles:['legs','triceps']}];
+    case 3: return [
+      {name:'밀기 (가슴·어깨·삼두)',muscles:['chest','shoulder','triceps']},
+      {name:'당기기 (등·이두)',muscles:['back','biceps']},
+      {name:'하체',muscles:['legs','shoulder']}];
+    case 4: return [
+      {name:'상체 A (가슴·삼두)',muscles:['chest','triceps','shoulder']},
+      {name:'하체 A',muscles:['legs']},
+      {name:'상체 B (등·이두)',muscles:['back','biceps']},
+      {name:'하체 B (+종아리)',muscles:['legs','shoulder']}];
+    case 5: return [
+      {name:'가슴',muscles:['chest','triceps']},
+      {name:'등',muscles:['back','biceps']},
+      {name:'어깨',muscles:['shoulder']},
+      {name:'하체',muscles:['legs']},
+      {name:'팔 (이두·삼두)',muscles:['biceps','triceps']}];
+    case 6: return [
+      {name:'밀기 (가슴·어깨·삼두)',muscles:['chest','shoulder','triceps']},
+      {name:'당기기 (등·이두)',muscles:['back','biceps']},
+      {name:'하체',muscles:['legs']},
+      {name:'밀기 (가슴·어깨·삼두)',muscles:['chest','shoulder','triceps']},
+      {name:'당기기 (등·이두)',muscles:['back','biceps']},
+      {name:'하체',muscles:['legs']}];
+  }
+}
+
+const WEEKDAYS = ['월','화','수','목','금','토','일'];
+const DAYMAP = { 1:[0], 2:[0,3], 3:[0,2,4], 4:[0,1,3,4], 5:[0,1,2,3,4], 6:[0,1,2,3,4,5] };
+
+function buildExercises(muscles, equip){
+  const pool = EXDB[equip];
+  const per = muscles.length>=4 ? 1 : muscles.length===3 ? 2 : muscles.length===2 ? 2 : 3;
+  let list = [];
+  muscles.forEach(mu=>{
+    const ex = pool[mu] || [];
+    for(let i=0; i<per && i<ex.length; i++) list.push(ex[i]);
+  });
+  return list.slice(0,5);
+}
+
+function buildWeek(){
+  const freq = plan.freq;
+  const splits = splitFor(freq);
+  const days = DAYMAP[freq];
+  const losing = current.bfp>=25 || /감량|체지방|체중/.test(current.target);
+  const cardioTxt = losing ? '유산소 25~30분 (중강도)' : '가벼운 유산소 15분';
+  const week = [];
+  let si = 0;
+  for(let d=0; d<7; d++){
+    if(days.includes(d)){
+      const sp = splits[si++];
+      const lines = buildExercises(sp.muscles, plan.equip).map(e=>({n:e[0], s:e[1]}));
+      if(plan.cardio==='after') lines.push({n:'🏃 '+cardioTxt, s:'운동 마무리'});
+      week.push({day:WEEKDAYS[d], type:'train', focus:sp.name, ex:lines});
+    } else {
+      if(plan.cardio==='rest'){
+        week.push({day:WEEKDAYS[d], type:'cardio', focus:'유산소 / 회복', ex:[{n:'🏃 '+cardioTxt, s:''},{n:'스트레칭·폼롤러', s:'10분'}]});
+      } else {
+        week.push({day:WEEKDAYS[d], type:'rest', focus:'😴 휴식', ex:[]});
+      }
+    }
+  }
+  return week;
+}
+
+/* ===================== 가짜 AI 식단 (나중에 Claude API로 교체) ===================== */
+function fakeDiet(m){
+  const losing = m.bfp>=25 || /감량|체지방|체중/.test(m.target);
+  const meals = losing ? [
+    {when:'아침', food:'그릭요거트 + 블루베리\n삶은 달걀 2개'},
+    {when:'점심', food:'현미밥 1/2공기\n닭가슴살·채소 샐러드'},
+    {when:'저녁', food:'두부 스테이크\n구운 채소 + 미역국'},
+  ] : [
+    {when:'아침', food:'오트밀 + 바나나\n계란 3개·우유'},
+    {when:'점심', food:'현미밥 1공기\n소고기·고구마·나물'},
+    {when:'저녁', food:'닭가슴살 200g\n파스타 + 단호박'},
+  ];
+  const tip = losing
+    ? `현재 체지방률 ${m.bfp}%로 ${m.target}이 우선 목표입니다. 하루 약 ${Math.round(m.weight*30)}kcal, 단백질 ${Math.round(m.weight*1.6)}g 섭취를 권장합니다.`
+    : `골격근량 ${m.smm}kg을 더 늘릴 시점입니다. 하루 약 ${Math.round(m.weight*38)}kcal, 단백질 ${Math.round(m.weight*2)}g로 근성장을 지원하세요.`;
+  return { meals, tip, losing };
+}
+
+/* ===================== 가짜 체형 데이터 (나중에 카메라+MediaPipe AI로 교체) ===================== */
+function fakePosture(m){
+  const s = m.id;
+  const sh = ((s*7)%5)-2;            // 어깨 기울기 방향/정도 (-2..2)
+  const pel = ((s*3)%5)-2;           // 골반 기울기
+  const head = ((s*5)%5)-2;          // 머리 중심
+  const neck = 8 + ((s*4)%12);       // 거북목(전방 머리각) 8~19
+  const round = (s%3===0);           // 굽은등(라운드숄더) 여부
+  const dec = (n)=>((s*n)%9)/10;
+  const shD = (Math.abs(sh)+dec(2)).toFixed(1);
+  const pelD = (Math.abs(pel)+dec(3)).toFixed(1);
+  const headD = (Math.abs(head)+dec(5)).toFixed(1);
+  const score = Math.max(60, Math.round(94 - Math.abs(sh)*4 - Math.abs(pel)*3 - Math.max(0,neck-10) - (round?6:0) - Math.abs(head)*2));
+  return { sh, pel, head, neck, round, shD, pelD, headD, score };
+}
+
+function poseDiagram(p){
+  const sh = p.sh*4, pel = p.pel*4, head = p.head*3;
+  return `<div class="pose-diagram"><svg viewBox="0 0 200 170">
+    <line x1="100" y1="8" x2="100" y2="162" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="5 5"/>
+    <circle cx="${100+head}" cy="34" r="15" fill="#dbeafe" stroke="#3b82f6" stroke-width="2.5"/>
+    <line x1="100" y1="70" x2="100" y2="120" stroke="#94a3b8" stroke-width="3"/>
+    <g transform="rotate(${sh} 100 70)"><line x1="58" y1="70" x2="142" y2="70" stroke="#2563eb" stroke-width="6" stroke-linecap="round"/><circle cx="58" cy="70" r="6" fill="#2563eb"/><circle cx="142" cy="70" r="6" fill="#2563eb"/></g>
+    <g transform="rotate(${pel} 100 120)"><line x1="70" y1="120" x2="130" y2="120" stroke="#06b6d4" stroke-width="6" stroke-linecap="round"/><circle cx="70" cy="120" r="6" fill="#06b6d4"/><circle cx="130" cy="120" r="6" fill="#06b6d4"/></g>
+  </svg>
+  <div class="pose-legend"><span><i style="background:#2563eb"></i>어깨선</span><span><i style="background:#06b6d4"></i>골반선</span><span><i style="background:#cbd5e1"></i>중심선</span></div>
+  </div>`;
+}
+
+function poseSideRow(label, deg, sign, goodT, warnT){
+  const v = parseFloat(deg);
+  const [tag,txt] = tagFor(v, goodT, warnT);
+  const off = sign*Math.min(v*22, 95);
+  const dir = sign>0 ? '우측이 높음' : sign<0 ? '좌측이 높음' : '균형';
+  return `<div class="pose-metric">
+    <div class="top"><span class="label">${label}</span><span class="tag ${tag}">${txt}</span></div>
+    <div class="pose-track"><div class="center"></div><div class="dot" style="left:calc(50% + ${off}px)"></div></div>
+    <div class="pose-desc">${v===0 ? '좌우 균형이 좋습니다' : `${dir} · 약 ${deg}° 차이`}</div>
+  </div>`;
+}
+function poseSevRow(label, sev, goodT, warnT, descGood, descBad){
+  const [tag,txt] = tagFor(sev, goodT, warnT);
+  return `<div class="pose-metric">
+    <div class="top"><span class="label">${label}</span><span class="tag ${tag}">${txt}</span></div>
+    <div class="pose-track sevgrad"><div class="dot" style="left:${Math.min(Math.max(sev,3),96)}%"></div></div>
+    <div class="pose-desc">${sev<=goodT ? descGood : descBad}</div>
+  </div>`;
+}
+
+function renderPosture(){
+  const m = current, p = fakePosture(m);
+  const circ = 2*Math.PI*70, off = circ*(1-p.score/100);
+  const col = p.score>=80 ? '#10b981' : p.score>=70 ? '#f59e0b' : '#ef4444';
+
+  document.getElementById('poseLeft').innerHTML = `
+    <div class="score-ring">
+      <div class="ring">
+        <svg width="170" height="170">
+          <circle cx="85" cy="85" r="70" stroke="#e2e8f0" stroke-width="14" fill="none"/>
+          <circle cx="85" cy="85" r="70" stroke="${col}" stroke-width="14" fill="none"
+            stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${off}"/>
+        </svg>
+        <div class="val"><b style="color:${col}">${p.score}</b><span>자세 점수</span></div>
+      </div>
+      <div class="pname">${m.name}</div>
+      <div class="pmeta">체형 · 자세 균형 분석</div>
+    </div>
+    ${poseDiagram(p)}`;
+
+  const neckSev = Math.round(p.neck/25*100);
+  const roundSev = p.round ? 70 : 22;
+  const legSev = (m.id%2) ? 26 : 48;
+  let html = `<div class="ai-head"><span class="ai-badge">📷 자세 분석</span><h2>${m.name}님 체형 리포트</h2></div>`;
+  html += poseSideRow('어깨 기울기', p.shD, p.sh, 1, 2.5);
+  html += poseSideRow('골반 기울기', p.pelD, p.pel, 1, 2.5);
+  html += poseSideRow('머리 중심(정면)', p.headD, p.head, 1, 2.5);
+  html += poseSevRow('거북목 (전방 머리각)', neckSev, 40, 60, '목 정렬이 정상 범위입니다', `전방 머리각 약 ${p.neck}° · 거북목 경향이 보입니다`);
+  html += poseSevRow('굽은 등 (라운드숄더)', roundSev, 35, 55, '등·어깨 정렬이 양호합니다', '어깨가 앞으로 말린 라운드숄더 경향');
+  html += poseSevRow('다리 정렬 (O/X)', legSev, 35, 55, '다리 정렬이 양호합니다', '경미한 다리 정렬 불균형 경향');
+
+  const fixes = [];
+  if(p.neck>10) fixes.push({t:'턱 당기기(친턱) + 흉추 신전', d:'벽에 등을 대고 턱을 뒤로 당기는 친턱 15회, 폼롤러 흉추 신전으로 거북목을 완화하세요.'});
+  if(p.round) fixes.push({t:'가슴 스트레칭 + 등 강화', d:'문틀 가슴 스트레칭 30초, 밴드 페이스풀·로우로 말린 어깨를 펴주세요.'});
+  if(Math.abs(p.sh)>=1 || Math.abs(p.pel)>=1) fixes.push({t:'좌우 불균형 교정', d:'높은 쪽 근육은 이완(스트레칭), 낮은 쪽은 강화하는 비대칭 보정 운동을 권장합니다.'});
+  fixes.push({t:'코어 안정화', d:'플랭크·데드버그로 몸통을 잡아주면 전반적인 정렬 유지에 도움이 됩니다.'});
+
+  html += `<div class="ai-section"><h3><span class="em">🧘</span> AI 교정 추천</h3><div class="routine-grid">
+    ${fixes.slice(0,4).map(f=>`<div class="ai-item" style="border-radius:0 14px 14px 0"><div class="t" style="font-weight:800;font-size:16px">${f.t}</div><div class="d">${f.d}</div></div>`).join('')}
+  </div></div>`;
+  document.getElementById('poseRight').innerHTML = html;
+}
+
+/* ===================== 화면 전환 ===================== */
+let current = null;
+let planMode = 'exercise';
+let lastType = 'exercise';
+const plan = { freq:null, equip:null, cardio:null };
+
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goBackFromResult(){ go(lastType==='diet' ? 'category' : 'options'); }
+
+function renderMembers(){
+  const g = document.getElementById('memberGrid');
+  g.innerHTML = MEMBERS.map(m=>`
+    <div class="member-card" onclick="selectMember(${m.id})">
+      <div class="avatar">${m.name[0]}</div>
+      <div class="info">
+        <div class="name">${m.name}</div>
+        <div class="meta">${m.sex} · ${m.age}세 · ${m.height}cm · 목표: ${m.target}</div>
+      </div>
+    </div>`).join('');
+}
+function selectMember(id){
+  current = MEMBERS.find(m=>m.id===id);
+  document.getElementById('catHello').textContent = `${current.name}님, 무엇을 도와드릴까요?`;
+  go('category');
+}
+
+/* ---- 운동 조건 선택 ---- */
+function openOptions(mode){
+  planMode = mode;
+  plan.freq = null; plan.equip = null; plan.cardio = null;
+  document.querySelectorAll('.chip.selected').forEach(c=>c.classList.remove('selected'));
+  updateMakeBtn();
+  go('options');
+}
+function pickChip(el, group, val){
+  document.querySelectorAll(`.chip[data-group="${group}"]`).forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  plan[group] = val;
+  updateMakeBtn();
+}
+function updateMakeBtn(){
+  const ok = plan.freq && plan.equip;
+  const b = document.getElementById('makeBtn');
+  b.disabled = !ok;
+  b.style.opacity = ok ? 1 : .4;
+}
+function makeRoutine(){
+  /* 유산소는 회원 목표에 맞춰 자동 결정 (감량 → 운동 후 / 그 외 → 근력 집중) */
+  const losing = current.bfp>=25 || /감량|체지방|체중/.test(current.target);
+  plan.cardio = losing ? 'after' : 'none';
+  analyze(planMode);
+}
+
+/* ---- 분석(로딩 → 결과) ---- */
+function runLoad(msgs, done){
+  go('loading');
+  const lm=document.getElementById('loadMsg');
+  lm.textContent=msgs[0];
+  let i=0;
+  const iv=setInterval(()=>{ i++; if(i<msgs.length) lm.textContent=msgs[i]; },550);
+  setTimeout(()=>{ clearInterval(iv); done(); }, 2300);
+}
+const loadMsgs = ['체성분 데이터를 해석하는 중...','목표에 맞는 분할을 설계하는 중...','주간 루틴을 배치하는 중...','맞춤 식단을 구성하는 중...'];
+function analyze(type){
+  lastType = type;
+  runLoad(loadMsgs, ()=>{ renderResult(type); go('result'); });
+}
+
+/* ---- 체형 분석(촬영 → 분석 → 리포트) ---- */
+const poseMsgs = ['카메라 영상에서 관절을 인식하는 중...','어깨·골반 정렬을 측정하는 중...','거북목·굽은등을 분석하는 중...','교정 운동을 구성하는 중...'];
+function openPosture(){ go('postureGuide'); }
+function capturePosture(){ runLoad(poseMsgs, ()=>{ renderPosture(); go('postureResult'); }); }
+
+function tagFor(value, goodMax, warnMax){
+  if(value<=goodMax) return ['good','정상'];
+  if(value<=warnMax) return ['warn','주의'];
+  return ['bad','관리필요'];
+}
+
+const EQUIP_LABEL = { gym:'헬스장', home:'홈트(덤벨)', body:'맨몸운동' };
+const CARDIO_LABEL = { after:'운동 후 유산소', rest:'쉬는날 유산소', none:'근력만' };
+
+function renderResult(type){
+  const m = current;
+  const circ = 2*Math.PI*70; const off = circ*(1-m.score/100);
+  const scoreColor = m.score>=80 ? '#10b981' : m.score>=70 ? '#f59e0b' : '#ef4444';
+
+  /* 왼쪽: 인바디 */
+  const [bfTag,bfTxt] = tagFor(m.bfp, m.sex==='남'?20:28, m.sex==='남'?25:33);
+  document.getElementById('inbodyPanel').innerHTML = `
+    <div class="score-ring">
+      <div class="ring">
+        <svg width="170" height="170">
+          <circle cx="85" cy="85" r="70" stroke="#e2e8f0" stroke-width="14" fill="none"/>
+          <circle cx="85" cy="85" r="70" stroke="${scoreColor}" stroke-width="14" fill="none"
+            stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${off}"/>
+        </svg>
+        <div class="val"><b style="color:${scoreColor}">${m.score}</b><span>인바디 점수</span></div>
+      </div>
+      <div class="pname">${m.name}</div>
+      <div class="pmeta">${m.sex} · ${m.age}세 · ${m.height}cm · ${m.weight}kg</div>
+    </div>
+    <div class="metric">
+      <div class="row"><span class="label">체지방률</span><span><span class="tag ${bfTag}">${bfTxt}</span> <span class="num">${m.bfp}%</span></span></div>
+      <div class="bar"><i style="width:${Math.min(m.bfp*2.2,100)}%"></i></div>
+    </div>
+    <div class="metric">
+      <div class="row"><span class="label">골격근량</span><span class="num">${m.smm} kg</span></div>
+      <div class="bar"><i style="width:${Math.min(m.smm*2,100)}%"></i></div>
+    </div>
+    <div class="metric">
+      <div class="row"><span class="label">BMI</span><span class="num">${m.bmi}</span></div>
+      <div class="bar"><i style="width:${Math.min(m.bmi*3,100)}%"></i></div>
+    </div>
+    <div class="metric">
+      <div class="row"><span class="label">체중</span><span class="num">${m.weight} kg</span></div>
+      <div class="bar"><i style="width:${Math.min(m.weight,100)}%"></i></div>
+    </div>`;
+
+  /* 오른쪽: AI */
+  const diet = fakeDiet(m);
+  let html = `<div class="ai-head"><span class="ai-badge">✨ Claude AI</span><h2>${m.name}님 맞춤 리포트</h2></div>`;
+  html += `<div class="ai-item" style="border-left-color:${scoreColor};margin-top:12px"><div class="d" style="color:var(--ink);font-size:16px">${diet.tip}</div></div>`;
+
+  if(type==='exercise' || type==='full'){
+    const week = buildWeek();
+    html += `<div class="ai-section">
+      <h3><span class="em">🏋️</span> 주간 운동 루틴</h3>
+      <div class="plan-sum">
+        <span>주 ${plan.freq}회</span><span>${EQUIP_LABEL[plan.equip]}</span><span>${CARDIO_LABEL[plan.cardio]}</span>
+      </div>
+      <div class="routine-grid">
+        ${week.map(d=>{
+          if(d.type==='rest') return `<div class="day-card rest"><div class="day-head"><span class="dow">${d.day}</span><span class="focus">${d.focus}</span></div></div>`;
+          const items = d.ex.map(e=>`<li><span>${e.n}</span>${e.s?`<b>${e.s}</b>`:''}</li>`).join('');
+          return `<div class="day-card ${d.type==='cardio'?'cardio':'train'}"><div class="day-head"><span class="dow">${d.day}</span><span class="focus">${d.focus}</span></div><ul>${items}</ul></div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  if(type==='diet' || type==='full'){
+    html += `<div class="ai-section">
+      <h3><span class="em">🥗</span> 하루 추천 식단</h3>
+      <div class="meal-grid">
+        ${diet.meals.map(x=>`<div class="meal"><div class="when">${x.when}</div><div class="food">${x.food.replace(/\n/g,'<br/>')}</div></div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('aiPanel').innerHTML = html;
+}
+
+/* ===================== 시계 ===================== */
+function tick(){
+  const d=new Date();
+  const hh=String(d.getHours()).padStart(2,'0');
+  const mm=String(d.getMinutes()).padStart(2,'0');
+  const days=['일','월','화','수','목','금','토'];
+  const ds=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${days[d.getDay()]})`;
+  ['clock1','clock2','clock3','clock4','clock5','clock6','clock7'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=`${hh}:${mm}`;});
+  const d1=document.getElementById('date1'); if(d1)d1.textContent=ds;
+}
+setInterval(tick,1000); tick();
+renderMembers();
+</script>
+</body>
+</html>
