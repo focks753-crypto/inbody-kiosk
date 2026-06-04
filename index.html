@@ -240,6 +240,11 @@
   .cam-stage video, .cam-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .cam-stage.mirror video, .cam-stage.mirror canvas { transform: scaleX(-1); }
   .cam-frame { position: absolute; inset: 12px; border: 2px dashed rgba(56,189,248,.55); border-radius: 18px; pointer-events: none; transition: border-color .3s; }
+  .cam-count { position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(10,17,32,.4); color: #fff; font-size: 150px; font-weight: 900; z-index: 5;
+    text-shadow: 0 6px 30px rgba(0,0,0,.5); }
+  .cam-count.show { display: flex; animation: countpop .9s ease; }
+  @keyframes countpop { 0%{ transform: scale(1.7); opacity:.2 } 40%{ transform: scale(1); opacity:1 } 100%{ transform: scale(1); opacity:1 } }
   .cam-guide { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   .cam-guide .guideFig { fill: #38bdf8; opacity: .22; transition: fill .3s ease; }
   .cam-stage.detected .cam-guide .guideFig { fill: #22c55e; }
@@ -384,11 +389,12 @@
         </g>
       </svg>
       <div class="cam-frame"></div>
+      <div class="cam-count" id="camCount"></div>
     </div>
     <div class="scan-title">정면을 바라보고 서주세요</div>
     <div class="scan-sub" id="camStatus">카메라를 준비하는 중...</div>
     <div class="cam-actions">
-      <button class="shoot-btn" onclick="capturePosture()">📷 촬영 · 분석</button>
+      <button class="shoot-btn" onclick="capturePosture()">📷 촬영 (5초 뒤)</button>
       <button class="cam-switch" onclick="if(window.switchCamera)window.switchCamera()">🔄 카메라 전환</button>
     </div>
     <div class="scan-demo">몸 전체가 화면에 들어오게 서주세요 · 측면(옆모습) 분석은 추후 추가</div>
@@ -579,10 +585,17 @@ function fakePosture(m){
 }
 /* 카메라 관절 좌표(MediaPipe 33점)로부터 실제 체형 계산 */
 function computePosture(lm){
-  const tilt = (a,b)=>{ const ang = Math.atan2(b.y-a.y, b.x-a.x)*180/Math.PI; const sign = (b.y<a.y)?1:-1; return +(sign*Math.abs(ang)).toFixed(1); };
-  const shDeg  = tilt(lm[11], lm[12]);   // 어깨 (좌11 - 우12)
-  const pelDeg = tilt(lm[23], lm[24]);   // 골반 (좌23 - 우24)
-  const headDeg= tilt(lm[7],  lm[8]);    // 귀 (좌7 - 우8)
+  /* 두 점을 화면 좌/우로 정렬한 뒤 수평선 기준 기울기(작은 각도)를 구함. +면 화면 오른쪽이 높음 */
+  const tilt = (p1, p2)=>{
+    const a = p1.x <= p2.x ? p1 : p2;   // 화면 왼쪽 점
+    const b = p1.x <= p2.x ? p2 : p1;   // 화면 오른쪽 점
+    const dx = Math.abs(b.x - a.x) || 1e-6;
+    const ang = Math.atan2(b.y - a.y, dx) * 180 / Math.PI; // 수평이면 0°에 가까움
+    return +(-ang).toFixed(1);           // 오른쪽이 더 높으면 양수
+  };
+  const shDeg  = tilt(lm[11], lm[12]);   // 어깨
+  const pelDeg = tilt(lm[23], lm[24]);   // 골반
+  const headDeg= tilt(lm[7],  lm[8]);    // 귀
   const legDiff= +(Math.abs(lm[25].y - lm[26].y)*100).toFixed(1); // 무릎 좌우 높이차
   return { shDeg, pelDeg, headDeg, legDiff, score: postureScore(shDeg,pelDeg,headDeg,legDiff), real:true };
 }
@@ -838,7 +851,27 @@ function stopCamera(){
 window.switchCamera = function(){ camFacing = (camFacing==='user') ? 'environment' : 'user'; stopCamera(); startCamera(); };
 
 function openPosture(){ go('postureGuide'); startCamera(); }
-async function capturePosture(){
+let countTimer = null;
+function capturePosture(){
+  if(countTimer) return;                 // 카운트다운 중복 방지
+  const countEl = document.getElementById('camCount');
+  const status = document.getElementById('camStatus');
+  let n = 5;
+  const show = (txt)=>{ countEl.textContent = txt; countEl.classList.remove('show'); void countEl.offsetWidth; countEl.classList.add('show'); };
+  countEl.style.display = 'flex';
+  show(n);
+  if(status) status.textContent = '자세를 잡아주세요! 곧 촬영합니다';
+  countTimer = setInterval(()=>{
+    n--;
+    if(n > 0){ show(n); }
+    else {
+      clearInterval(countTimer); countTimer = null;
+      show('📸');
+      setTimeout(()=>{ countEl.classList.remove('show'); countEl.style.display='none'; doCapture(); }, 500);
+    }
+  }, 1000);
+}
+async function doCapture(){
   const lm = window.getLatestLandmarks ? window.getLatestLandmarks() : null;
   stopCamera();
   const p = (lm && lm.length>24) ? computePosture(lm) : fakePosture(current);
@@ -848,7 +881,11 @@ async function capturePosture(){
   renderPosture(p, aiText);
   go('postureResult');
 }
-function closePosture(){ stopCamera(); go('category'); }
+function closePosture(){
+  if(countTimer){ clearInterval(countTimer); countTimer = null; }
+  const ce = document.getElementById('camCount'); if(ce){ ce.style.display='none'; ce.classList.remove('show'); }
+  stopCamera(); go('category');
+}
 
 function tagFor(value, goodMax, warnMax){
   if(value<=goodMax) return ['good','정상'];
