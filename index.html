@@ -256,6 +256,8 @@
   .cam-switch:active { transform: scale(.96); }
 
   /* ---------- Posture: result ---------- */
+  .pose-photo { margin-top: 16px; border-radius: 18px; overflow: hidden; background: #0a1120; box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+  .pose-photo img { width: 100%; display: block; }
   .pose-diagram { margin-top: 18px; background: #f8fafc; border-radius: 18px; padding: 14px 14px 8px; }
   .pose-diagram svg { width: 100%; height: 150px; }
   .pose-legend { display: flex; justify-content: center; gap: 22px; margin-top: 4px; }
@@ -377,15 +379,13 @@
     <div class="cam-stage" id="camStage">
       <video id="camVideo" playsinline autoplay muted></video>
       <canvas id="camCanvas"></canvas>
-      <svg class="cam-guide" viewBox="0 0 240 440" preserveAspectRatio="xMidYMid meet">
+      <svg class="cam-guide" viewBox="0 0 240 300" preserveAspectRatio="xMidYMid meet">
         <g class="guideFig">
-          <circle cx="120" cy="56" r="30"/>
-          <rect x="112" y="82" width="16" height="16" rx="7"/>
-          <path d="M76 106 Q120 86 164 106 L150 214 Q120 228 90 214 Z"/>
-          <rect x="62" y="104" width="17" height="150" rx="8" transform="rotate(20 70 110)"/>
-          <rect x="161" y="104" width="17" height="150" rx="8" transform="rotate(-20 170 110)"/>
-          <rect x="98" y="210" width="18" height="206" rx="9" transform="rotate(4 107 212)"/>
-          <rect x="124" y="210" width="18" height="206" rx="9" transform="rotate(-4 133 212)"/>
+          <circle cx="120" cy="62" r="40"/>
+          <rect x="108" y="98" width="24" height="22" rx="9"/>
+          <path d="M58 152 Q120 116 182 152 L168 296 Q120 308 72 296 Z"/>
+          <rect x="44" y="150" width="22" height="150" rx="11" transform="rotate(14 55 158)"/>
+          <rect x="174" y="150" width="22" height="150" rx="11" transform="rotate(-14 185 158)"/>
         </g>
       </svg>
       <div class="cam-frame"></div>
@@ -397,7 +397,7 @@
       <button class="shoot-btn" onclick="capturePosture()">📷 촬영 (5초 뒤)</button>
       <button class="cam-switch" onclick="if(window.switchCamera)window.switchCamera()">🔄 카메라 전환</button>
     </div>
-    <div class="scan-demo">몸 전체가 화면에 들어오게 서주세요 · 측면(옆모습) 분석은 추후 추가</div>
+    <div class="scan-demo">상반신(허리 위)만 들어와도 OK · 🔄 후면 카메라가 더 넓게 담겨요</div>
   </section>
 
   <!-- LOADING -->
@@ -596,8 +596,11 @@ function computePosture(lm){
   const shDeg  = tilt(lm[11], lm[12]);   // 어깨
   const pelDeg = tilt(lm[23], lm[24]);   // 골반
   const headDeg= tilt(lm[7],  lm[8]);    // 귀
-  const legDiff= +(Math.abs(lm[25].y - lm[26].y)*100).toFixed(1); // 무릎 좌우 높이차
-  return { shDeg, pelDeg, headDeg, legDiff, score: postureScore(shDeg,pelDeg,headDeg,legDiff), real:true };
+  /* 무릎이 화면 안에 보일 때만 다리 측정 (상반신만 찍어도 동작) */
+  const vis = (q)=> (q.visibility==null ? 1 : q.visibility);
+  const hasLeg = lm[25].y < 1.02 && lm[26].y < 1.02 && Math.min(vis(lm[25]), vis(lm[26])) > 0.5;
+  const legDiff = hasLeg ? +(Math.abs(lm[25].y - lm[26].y)*100).toFixed(1) : null;
+  return { shDeg, pelDeg, headDeg, legDiff, hasLeg, score: postureScore(shDeg,pelDeg,headDeg,legDiff||0), real:true };
 }
 
 function poseDiagram(p){
@@ -652,6 +655,7 @@ function renderPosture(p, aiText){
       <div class="pname">${m.name}</div>
       <div class="pmeta">${p.real ? '📷 카메라 실시간 분석' : '체형 · 자세 균형 분석'}</div>
     </div>
+    ${lastPosePhoto ? `<div class="pose-photo"><img src="${lastPosePhoto}" alt="촬영 사진"/></div>` : ''}
     ${poseDiagram(p)}`;
 
   let html = `<div class="ai-head"><span class="ai-badge">📷 자세 분석</span><h2>${m.name}님 체형 리포트</h2></div>`;
@@ -661,8 +665,8 @@ function renderPosture(p, aiText){
   html += poseSideRow('어깨 균형', p.shDeg, 1, 2.5);
   html += poseSideRow('골반 균형', p.pelDeg, 1, 2.5);
   html += poseSideRow('머리 기울기', p.headDeg, 1, 2.5);
-  html += poseSevRow('다리 높이차', p.legDiff, 2.5, 5, '좌우 다리 높이가 고른 편입니다', '좌우 다리·골반 높이차가 보입니다');
-  html += `<div class="ai-item" style="border-left-color:#94a3b8;margin-top:14px"><div class="d">ℹ 거북목·굽은등 같은 앞뒤 자세는 <b>측면(옆모습) 촬영</b> 시 분석됩니다.</div></div>`;
+  if(p.legDiff != null) html += poseSevRow('다리 높이차', p.legDiff, 2.5, 5, '좌우 다리 높이가 고른 편입니다', '좌우 다리·골반 높이차가 보입니다');
+  html += `<div class="ai-item" style="border-left-color:#94a3b8;margin-top:14px"><div class="d">ℹ 거북목·굽은등은 <b>측면(옆모습) 촬영</b> 시, 다리 정렬은 <b>전신 촬영</b> 시 분석됩니다.</div></div>`;
 
   if(aiText){
     html += `<div class="ai-section"><div class="ai-head" style="margin-bottom:10px"><span class="ai-badge">✨ Claude AI</span><h2 style="font-size:22px">AI 교정 분석</h2></div><div class="ai-report">${mdToHtml(aiText)}</div></div>`;
@@ -789,7 +793,8 @@ function posturePrompt(p){
   const m = current;
   return `당신은 체형 교정 전문가입니다. 카메라로 측정한 아래 회원의 자세를 분석하고 맞춤 교정 운동을 한국어로 추천하세요.\n\n`
     + `[회원] ${m.name}, ${m.sex} ${m.age}세\n`
-    + `[정면 자세 측정 결과]\n- 자세 점수: ${p.score}점\n- 어깨 균형: ${p.shDeg>0?'우측':p.shDeg<0?'좌측':'중앙'}이 약 ${Math.abs(p.shDeg)}° 높음\n- 골반 균형: ${p.pelDeg>0?'우측':p.pelDeg<0?'좌측':'중앙'}이 약 ${Math.abs(p.pelDeg)}° 높음\n- 머리 기울기: 약 ${Math.abs(p.headDeg)}°\n- 다리 좌우 높이차 지수: ${p.legDiff}\n\n`
+    + `[정면 자세 측정 결과]\n- 자세 점수: ${p.score}점\n- 어깨 균형: ${p.shDeg>0?'우측':p.shDeg<0?'좌측':'중앙'}이 약 ${Math.abs(p.shDeg)}° 높음\n- 골반 균형: ${p.pelDeg>0?'우측':p.pelDeg<0?'좌측':'중앙'}이 약 ${Math.abs(p.pelDeg)}° 높음\n- 머리 기울기: 약 ${Math.abs(p.headDeg)}°\n`
+    + (p.legDiff!=null ? `- 다리 좌우 높이차 지수: ${p.legDiff}\n\n` : `(상반신만 촬영되어 다리 정렬은 측정되지 않음)\n\n`)
     + `[작성 규칙]\n- 마크다운 (## 제목, **굵게**, - 목록)\n- 순서: 측정 요약 → 문제점 → 교정 스트레칭/운동 추천\n- 회원 이름 부르며 격려, 핵심 위주로 간결하게\n- 마지막에 "※ 의학적 진단이 아닌 참고용입니다" 한 줄 추가`;
 }
 
@@ -835,9 +840,9 @@ async function startCamera(){
     document.getElementById('camStage').classList.toggle('mirror', camFacing==='user');
     const sync = ()=>{ const st=document.getElementById('camStage'); if(camVideo.videoWidth){ st.style.aspectRatio = camVideo.videoWidth+' / '+camVideo.videoHeight; canvas.width = camVideo.videoWidth; canvas.height = camVideo.videoHeight; } };
     if(camVideo.videoWidth) sync(); else camVideo.addEventListener('loadedmetadata', sync, { once:true });
-    status.textContent = '몸 전체가 보이게 서주세요 (AI 분석 준비 중...)';
+    status.textContent = '상반신이 화면에 들어오게 서주세요 (AI 분석 준비 중...)';
     if(window.startPoseAI) window.startPoseAI(camVideo);
-    else status.textContent = '몸 전체가 보이게 서주세요';
+    else status.textContent = '상반신이 화면에 들어오게 서주세요';
   }catch(err){
     status.textContent = '⚠ 카메라 권한이 거부됐어요. 주소창의 카메라 아이콘에서 "허용"으로 바꾼 뒤 다시 시도해주세요.';
   }
@@ -851,7 +856,7 @@ function stopCamera(){
 window.switchCamera = function(){ camFacing = (camFacing==='user') ? 'environment' : 'user'; stopCamera(); startCamera(); };
 
 function openPosture(){ go('postureGuide'); startCamera(); }
-let countTimer = null;
+let countTimer = null, lastPosePhoto = null;
 function capturePosture(){
   if(countTimer) return;                 // 카운트다운 중복 방지
   const countEl = document.getElementById('camCount');
@@ -871,8 +876,24 @@ function capturePosture(){
     }
   }, 1000);
 }
+/* 촬영 순간의 카메라 화면(+관절 스켈레톤)을 사진으로 캡처 */
+function grabPhoto(){
+  try {
+    const v = document.getElementById('camVideo');
+    const oc = document.getElementById('camCanvas');
+    if(!v || !v.videoWidth) return null;
+    const t = document.createElement('canvas');
+    t.width = v.videoWidth; t.height = v.videoHeight;
+    const tx = t.getContext('2d');
+    if(camFacing === 'user'){ tx.translate(t.width, 0); tx.scale(-1, 1); }   // 셀카는 좌우반전 맞춰줌
+    tx.drawImage(v, 0, 0, t.width, t.height);
+    if(oc && oc.width) tx.drawImage(oc, 0, 0, t.width, t.height);            // 관절 스켈레톤 합성
+    return t.toDataURL('image/jpeg', 0.85);
+  } catch(e){ return null; }
+}
 async function doCapture(){
   const lm = window.getLatestLandmarks ? window.getLatestLandmarks() : null;
+  lastPosePhoto = grabPhoto();
   stopCamera();
   const p = (lm && lm.length>24) ? computePosture(lm) : fakePosture(current);
   let aiText = null;
@@ -978,6 +999,56 @@ function tick(){
 }
 setInterval(tick,1000); tick();
 renderMembers();
+
+/* ===================== 인바디 실시간 자동 감지 ===================== */
+const WORKER_URL = 'https://inbody-kiosk.focks1541.workers.dev';
+let lastStoredAt = null;
+
+function inbodyFieldMap(d){
+  /* InBody API 필드명 → 우리 회원 객체로 변환 */
+  const sex = (d['Gender']||'').toUpperCase()==='F' ? '여' : '남';
+  const score = parseFloat(d['InBodyScore']||d['inbodyScore']||70);
+  const bfp = parseFloat(d['PBF(PercentBodyFat)']||d['BFP']||0);
+  const smm = parseFloat(d['SMM(SkeletalMuscleMass)']||d['SMM']||0);
+  const weight = parseFloat(d['Weight']||0);
+  const bmi = parseFloat(d['BMI(BodyMassIndex)']||d['BMI']||0);
+  const height = parseFloat(d['Height']||0);
+  const age = parseFloat(d['Age']||0);
+  const name = d['Name'] || d['ID'] || d['MobileNumber'] || '측정 회원';
+  const target = bfp >= 25 ? '체지방 감량' : smm < 30 ? '근육량 증가' : '바디 유지';
+  return { id: 99, name, age: Math.round(age), sex, height, weight, smm, bfp, bmi, score: Math.round(score), target };
+}
+
+async function pollInbodyData(){
+  try {
+    const res = await fetch(WORKER_URL + '/fulldata');
+    if(!res.ok) return;
+    const data = await res.json();
+    if(!data || !data.storedAt) return;
+    if(data.storedAt === lastStoredAt) return; /* 새 데이터 없음 */
+    lastStoredAt = data.storedAt;
+    const raw = data.inbodyData;
+    if(!raw || !raw['Weight']) return;
+    /* 새 측정 데이터 감지! 자동으로 카테고리 화면으로 이동 */
+    current = inbodyFieldMap(raw);
+    document.getElementById('catHello').textContent = `${current.name || '회원'}님, 무엇을 도와드릴까요?`;
+    /* 현재 대기화면이나 회원선택 화면이면 자동 이동 */
+    const activeScreen = document.querySelector('.screen.active');
+    if(activeScreen && (activeScreen.id === 'start' || activeScreen.id === 'member')){
+      go('category');
+      /* 새 측정 알림 효과 */
+      const badge = document.createElement('div');
+      badge.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;font-weight:900;font-size:20px;padding:14px 32px;border-radius:999px;z-index:999;box-shadow:0 8px 24px rgba(16,185,129,.4)';
+      badge.textContent = '✅ 인바디 측정 완료! 분석 메뉴를 선택하세요';
+      document.body.appendChild(badge);
+      setTimeout(()=>badge.remove(), 3500);
+    }
+  } catch(e){}
+}
+
+/* 3초마다 새 인바디 데이터 확인 */
+setInterval(pollInbodyData, 3000);
+pollInbodyData();
 </script>
 
 <!-- ===================== MediaPipe 자세 인식 엔진 (영상 위에 관절점 얹기) ===================== -->
@@ -1002,9 +1073,9 @@ window.startPoseAI = async function(video){
   ctx = canvas.getContext('2d');
   dutils = dutils || new DrawingUtils(ctx);
   try { await ensurePose(); }
-  catch(e){ setStatus('몸 전체가 보이게 서주세요 (AI 모델 로드 실패 — 촬영은 가능)'); return; }
+  catch(e){ setStatus('상반신이 화면에 들어오게 서주세요 (AI 모델 로드 실패 — 촬영은 가능)'); return; }
   running = true;
-  setStatus('몸 전체가 보이게 서주세요');
+  setStatus('상반신이 화면에 들어오게 서주세요');
   loop();
 };
 
