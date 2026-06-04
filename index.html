@@ -57,24 +57,61 @@
   }
   .btn-back:active { transform: scale(.96); }
 
-  /* ---------- Start screen ---------- */
+  /* ---------- 대기 화면 ---------- */
   #start { background: var(--grad); color: #fff; align-items: center; justify-content: center; text-align: center; }
   #start .topbar { position: absolute; top: 48px; left: 64px; right: 64px; }
   #start .brand, #start .clock .t { color: #fff; }
   #start .clock { color: rgba(255,255,255,.8); }
   #start .dot { background: #fff; color: var(--blue); box-shadow: none; }
   .hero-title { font-size: 64px; font-weight: 900; letter-spacing: -2px; line-height: 1.1; }
-  .hero-sub { font-size: 24px; opacity: .9; margin-top: 18px; font-weight: 500; }
-  .start-btn {
-    margin-top: 56px; border: none; cursor: pointer;
-    background: #fff; color: var(--blue); font-weight: 900; font-size: 30px;
-    padding: 30px 80px; border-radius: 999px;
-    box-shadow: 0 20px 50px rgba(0,0,0,.25);
-    transition: transform .15s ease;
-    animation: pulse 2.4s infinite;
+  .hero-sub { font-size: 22px; opacity: .75; margin-top: 18px; font-weight: 500; }
+  .standby-icon { font-size: 110px; margin-bottom: 18px; animation: float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-14px);} }
+  .standby-pulse {
+    width: 220px; height: 220px; border-radius: 50%; margin: 0 auto 32px;
+    background: rgba(255,255,255,.12);
+    display: grid; place-items: center;
+    box-shadow: 0 0 0 0 rgba(255,255,255,.4);
+    animation: ripple 2.4s infinite;
   }
-  .start-btn:active { transform: scale(.95); }
+  .standby-pulse .inner { font-size: 90px; }
+  @keyframes ripple {
+    0%  { box-shadow: 0 0 0 0 rgba(255,255,255,.35); }
+    70% { box-shadow: 0 0 0 40px rgba(255,255,255,0); }
+    100%{ box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+  }
+  .standby-dot { width: 10px; height: 10px; background: rgba(255,255,255,.6); border-radius: 50%;
+    display: inline-block; margin: 0 4px; animation: blink 1.4s infinite; }
+  .standby-dot:nth-child(2){ animation-delay:.2s; }
+  .standby-dot:nth-child(3){ animation-delay:.4s; }
+  @keyframes blink { 0%,80%,100%{ opacity:.2; } 40%{ opacity:1; } }
   @keyframes pulse { 0%,100%{ box-shadow:0 20px 50px rgba(0,0,0,.25);} 50%{ box-shadow:0 20px 70px rgba(0,0,0,.4);} }
+
+  /* ---------- 결과 + 카테고리 화면 ---------- */
+  #resultSelect { padding: 36px 48px; }
+  .rs-wrap { display: grid; grid-template-columns: 360px 1fr; gap: 28px; flex: 1; overflow: hidden; margin-top: 12px; }
+  .rs-left { background: var(--card); border-radius: 28px; padding: 28px; box-shadow: 0 8px 24px rgba(15,23,42,.07); overflow-y: auto; }
+  .rs-right { display: flex; flex-direction: column; gap: 16px; overflow: hidden; }
+  .rs-right .rs-head { font-size: 28px; font-weight: 900; letter-spacing: -.5px; flex-shrink: 0; }
+  .rs-right .rs-sub { color: var(--slate); font-size: 17px; font-weight: 500; margin-top: 4px; flex-shrink: 0; }
+  .rs-cats { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; flex: 1; min-height: 0; }
+  .rs-cat {
+    background: var(--card); border-radius: 24px; padding: 22px 18px; cursor: pointer; text-align: center;
+    box-shadow: 0 8px 22px rgba(15,23,42,.07); border: 2px solid transparent;
+    transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  }
+  .rs-cat:active { transform: scale(.97); border-color: var(--blue); }
+  .rs-cat:hover { border-color: rgba(37,99,235,.3); box-shadow: 0 12px 32px rgba(15,23,42,.12); }
+  .rs-ico { width: 68px; height: 68px; border-radius: 20px; display: grid; place-items: center; font-size: 36px; flex-shrink: 0; }
+  .rs-cat h3 { font-size: 22px; font-weight: 900; }
+  .rs-cat p { color: var(--slate); font-size: 14px; font-weight: 500; line-height: 1.4; }
+  .rs-metric { margin-top: 16px; }
+  .rs-metric .row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+  .rs-metric .row:last-child { border-bottom: none; }
+  .rs-metric .lbl { font-size: 16px; font-weight: 700; color: var(--slate); }
+  .rs-metric .val { font-size: 20px; font-weight: 900; color: var(--ink); }
+  .rs-metric .unit { font-size: 13px; font-weight: 600; color: var(--slate); margin-left: 3px; }
 
   /* ---------- Headings ---------- */
   .head { margin: 12px 0 18px; flex-shrink: 0; }
@@ -290,25 +327,62 @@
 <body>
 <div id="app">
 
-  <!-- START -->
+  <!-- 대기 화면 -->
   <section id="start" class="screen active">
     <div class="topbar">
       <div class="brand"><div class="dot">B</div> InBody 스마트 분석</div>
       <div class="clock"><div class="t" id="clock1">--:--</div><div id="date1">----</div></div>
     </div>
-    <h1 class="hero-title">건강한 변화의 시작<br/>지금 측정하세요</h1>
-    <p class="hero-sub">인바디 측정 후 AI가 맞춤 운동·식단을 추천해드립니다</p>
-    <button class="start-btn" onclick="go('member')">측정 시작하기 →</button>
+    <div class="standby-pulse"><div class="inner">🏃</div></div>
+    <h1 class="hero-title">인바디를 측정하세요</h1>
+    <p class="hero-sub">측정이 완료되면 자동으로 결과가 표시됩니다</p>
+    <div style="margin-top:28px">
+      <span class="standby-dot"></span>
+      <span class="standby-dot"></span>
+      <span class="standby-dot"></span>
+    </div>
   </section>
 
-  <!-- MEMBER -->
-  <section id="member" class="screen">
+  <!-- 인바디 결과 + 카테고리 선택 -->
+  <section id="resultSelect" class="screen">
     <div class="topbar">
-      <button class="btn-back" onclick="go('start')">← 처음으로</button>
-      <div class="clock"><div class="t" id="clock2">--:--</div></div>
+      <div class="brand"><div class="dot" style="width:34px;height:34px;font-size:18px">B</div> 측정 결과</div>
+      <div class="clock"><div class="t" id="clockRS">--:--</div></div>
     </div>
-    <div class="head"><h1>회원을 선택해주세요</h1><p>본인의 이름을 터치하면 측정 결과를 불러옵니다</p></div>
-    <div class="member-grid" id="memberGrid"></div>
+    <div class="rs-wrap">
+      <!-- 왼쪽: 인바디 결과 -->
+      <div class="rs-left" id="rsInbodyPanel"></div>
+      <!-- 오른쪽: 카테고리 선택 -->
+      <div class="rs-right">
+        <div class="rs-head" id="rsHello">분석 항목을 선택하세요</div>
+        <div class="rs-sub">원하는 서비스를 터치해주세요</div>
+        <div class="rs-cats">
+          <div class="rs-cat" onclick="openOptions('exercise')">
+            <div class="rs-ico" style="background:#dbeafe">🏋️</div>
+            <h3>AI 운동루틴</h3>
+            <p>체성분에 맞춘<br/>맞춤 주간 루틴</p>
+          </div>
+          <div class="rs-cat" onclick="analyze('diet')">
+            <div class="rs-ico" style="background:#dcfce7">🥗</div>
+            <h3>AI 맞춤식단</h3>
+            <p>목표 달성을 위한<br/>하루 식단 가이드</p>
+          </div>
+          <div class="rs-cat" onclick="openOptions('full')">
+            <div class="rs-ico" style="background:#fef3c7">📊</div>
+            <h3>종합 분석</h3>
+            <p>운동 + 식단을<br/>한 번에</p>
+          </div>
+          <div class="rs-cat" onclick="openPosture()">
+            <div class="rs-ico" style="background:#ede9fe">📷</div>
+            <h3>AI 체형분석</h3>
+            <p>자세·균형<br/>카메라 분석</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:16px">
+      <button class="btn-back" onclick="go('start')" style="font-size:16px">← 처음으로</button>
+    </div>
   </section>
 
   <!-- CATEGORY -->
@@ -994,7 +1068,7 @@ function tick(){
   const mm=String(d.getMinutes()).padStart(2,'0');
   const days=['일','월','화','수','목','금','토'];
   const ds=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${days[d.getDay()]})`;
-  ['clock1','clock2','clock3','clock4','clock5','clock6','clock7'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=`${hh}:${mm}`;});
+  ['clock1','clock2','clock3','clock4','clock5','clock6','clock7','clockRS'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=`${hh}:${mm}`;});
   const d1=document.getElementById('date1'); if(d1)d1.textContent=ds;
 }
 setInterval(tick,1000); tick();
@@ -1019,29 +1093,53 @@ function inbodyFieldMap(d){
   return { id: 99, name, age: Math.round(age), sex, height, weight, smm, bfp, bmi, score: Math.round(score), target };
 }
 
+function renderRsInbody(m){
+  const circ = 2*Math.PI*70, off = circ*(1-m.score/100);
+  const col = m.score>=80?'#10b981':m.score>=70?'#f59e0b':'#ef4444';
+  const [bfTag,bfTxt] = tagFor(m.bfp, m.sex==='여'?28:20, m.sex==='여'?33:25);
+  const bfm = (m.bfp * m.weight / 100).toFixed(1);
+  document.getElementById('rsInbodyPanel').innerHTML = `
+    <div class="score-ring">
+      <div class="ring">
+        <svg width="160" height="160">
+          <circle cx="80" cy="80" r="66" stroke="#e2e8f0" stroke-width="13" fill="none"/>
+          <circle cx="80" cy="80" r="66" stroke="${col}" stroke-width="13" fill="none"
+            stroke-linecap="round" stroke-dasharray="${2*Math.PI*66}" stroke-dashoffset="${2*Math.PI*66*(1-m.score/100)}"/>
+        </svg>
+        <div class="val"><b style="color:${col};font-size:44px">${m.score}</b><span style="font-size:13px">인바디 점수</span></div>
+      </div>
+      <div class="pname" style="font-size:22px">${m.name}</div>
+      <div class="pmeta">${m.sex} · ${m.age}세 · ${m.height}cm · ${m.weight}kg</div>
+    </div>
+    <div class="rs-metric">
+      <div class="row"><span class="lbl">골격근량</span><span class="val">${m.smm}<span class="unit">kg</span></span></div>
+      <div class="row"><span class="lbl">체지방량</span><span class="val">${bfm}<span class="unit">kg</span></span></div>
+      <div class="row"><span class="lbl">체지방률</span><span class="val">${m.bfp}<span class="unit">%</span> <span class="tag ${bfTag}" style="font-size:12px;padding:2px 8px;border-radius:999px">${bfTxt}</span></span></div>
+      <div class="row"><span class="lbl">체중</span><span class="val">${m.weight}<span class="unit">kg</span></span></div>
+      <div class="row"><span class="lbl">BMI</span><span class="val">${m.bmi}</span></div>
+    </div>`;
+}
+
 async function pollInbodyData(){
   try {
     const res = await fetch(WORKER_URL + '/fulldata');
     if(!res.ok) return;
     const data = await res.json();
     if(!data || !data.storedAt) return;
-    if(data.storedAt === lastStoredAt) return; /* 새 데이터 없음 */
+    if(data.storedAt === lastStoredAt) return;
     lastStoredAt = data.storedAt;
     const raw = data.inbodyData;
     if(!raw || !raw['Weight']) return;
-    /* 새 측정 데이터 감지! 자동으로 카테고리 화면으로 이동 */
+    /* 새 측정 데이터 감지! */
     current = inbodyFieldMap(raw);
-    document.getElementById('catHello').textContent = `${current.name || '회원'}님, 무엇을 도와드릴까요?`;
-    /* 현재 대기화면이나 회원선택 화면이면 자동 이동 */
-    const activeScreen = document.querySelector('.screen.active');
-    if(activeScreen && (activeScreen.id === 'start' || activeScreen.id === 'member')){
-      go('category');
-      /* 새 측정 알림 효과 */
-      const badge = document.createElement('div');
-      badge.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;font-weight:900;font-size:20px;padding:14px 32px;border-radius:999px;z-index:999;box-shadow:0 8px 24px rgba(16,185,129,.4)';
-      badge.textContent = '✅ 인바디 측정 완료! 분석 메뉴를 선택하세요';
-      document.body.appendChild(badge);
-      setTimeout(()=>badge.remove(), 3500);
+    /* 결과+카테고리 화면 렌더링 */
+    const displayName = current.name && current.name !== current.id ? current.name : '회원';
+    document.getElementById('rsHello').textContent = `${displayName}님, 분석 항목을 선택하세요`;
+    renderRsInbody(current);
+    /* 대기화면이면 자동 이동 */
+    const active = document.querySelector('.screen.active');
+    if(active && ['start','member','category'].includes(active.id)){
+      go('resultSelect');
     }
   } catch(e){}
 }
