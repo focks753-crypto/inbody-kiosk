@@ -338,8 +338,8 @@
     box-shadow: 0 12px 30px rgba(56,189,248,.45); transition: transform .15s ease; }
   .shoot-btn:active { transform: scale(.96); }
   .scan-demo { position: absolute; bottom: 30px; font-size: 13px; opacity: .5; }
-  .cam-stage { position: relative; height: 52vh; max-height: 540px; aspect-ratio: 3/4; background: #0a1120;
-    border-radius: 24px; overflow: hidden; box-shadow: 0 0 0 2px rgba(56,189,248,.35), 0 20px 50px rgba(0,0,0,.45); }
+  .cam-stage { position: relative; height: 72vh; max-height: 680px; aspect-ratio: 3/4; background: #050d1c;
+    border-radius: 24px; overflow: hidden; box-shadow: 0 0 0 2px rgba(56,189,248,.4), 0 20px 60px rgba(0,0,0,.6); }
   .cam-stage video, .cam-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .cam-stage.mirror video, .cam-stage.mirror canvas { transform: scaleX(-1); }
   .cam-frame { position: absolute; inset: 12px; border: 2px dashed rgba(56,189,248,.55); border-radius: 18px; pointer-events: none; transition: border-color .3s; }
@@ -353,11 +353,11 @@
   .cam-stage.detected .cam-guide .guideFig { fill: #22c55e; }
   .cam-stage.detected .cam-frame { border-color: rgba(34,197,94,.75); }
   /* 카메라 + 상태 텍스트 래퍼 */
-  .cam-layout { display: flex; align-items: center; justify-content: center; gap: 0; }
-  /* 인식 상태 — 카메라 바로 오른쪽에 붙임 */
+  .cam-layout { position: relative; display: flex; align-items: center; justify-content: center; }
+  /* 인식 상태 — 카메라 오른쪽에 절대 배치 (카메라 중앙 유지) */
   .cam-status-col {
-    width: 130px; display: flex; flex-direction: column; gap: 22px;
-    padding-left: 24px; flex-shrink: 0;
+    position: absolute; right: -168px; top: 50%; transform: translateY(-50%);
+    width: 140px; display: flex; flex-direction: column; gap: 22px;
   }
   .cds-row {
     display: flex; align-items: center; gap: 10px;
@@ -549,25 +549,141 @@
       <div class="cam-stage" id="camStage">
         <video id="camVideo" playsinline autoplay muted></video>
         <canvas id="camCanvas"></canvas>
-        <svg class="cam-guide" viewBox="0 0 240 520" preserveAspectRatio="xMidYMid meet">
-          <g class="guideFig" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="120" cy="44" r="30" stroke-width="2.5" fill="none"/>
-            <line x1="120" y1="74" x2="120" y2="92" stroke-width="2"/>
-            <line x1="60" y1="105" x2="180" y2="105" stroke-width="2.5"/>
-            <line x1="60" y1="105" x2="42" y2="195" stroke-width="2"/>
-            <line x1="42" y1="195" x2="30" y2="278" stroke-width="2"/>
-            <line x1="180" y1="105" x2="198" y2="195" stroke-width="2"/>
-            <line x1="198" y1="195" x2="210" y2="278" stroke-width="2"/>
-            <line x1="60" y1="105" x2="75" y2="235" stroke-width="2"/>
-            <line x1="180" y1="105" x2="165" y2="235" stroke-width="2"/>
-            <line x1="75" y1="235" x2="165" y2="235" stroke-width="2"/>
-            <line x1="95" y1="238" x2="88" y2="370" stroke-width="2.5"/>
-            <line x1="88" y1="370" x2="82" y2="490" stroke-width="2.5"/>
-            <line x1="145" y1="238" x2="152" y2="370" stroke-width="2.5"/>
-            <line x1="152" y1="370" x2="158" y2="490" stroke-width="2.5"/>
-            <line x1="72" y1="490" x2="96" y2="490" stroke-width="3"/>
-            <line x1="148" y1="490" x2="172" y2="490" stroke-width="3"/>
-          </g>
+        <svg class="cam-guide" viewBox="0 0 280 600" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <filter id="dotGlow" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="3.5" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="bodyGlow" x="-20%" y="-5%" width="140%" height="110%">
+              <feGaussianBlur stdDeviation="2" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <!-- 중앙 세로 점선 -->
+          <line x1="140" y1="8" x2="140" y2="592" stroke="rgba(56,189,248,.28)" stroke-width="1.5" stroke-dasharray="6 5"/>
+
+          <!-- 가로 측정선 (좌우 대칭) -->
+          <!-- 머리 -->
+          <line x1="22" y1="50" x2="96" y2="50" stroke="rgba(56,189,248,.38)" stroke-width="1" stroke-dasharray="4 4"/>
+          <line x1="184" y1="50" x2="258" y2="50" stroke="rgba(56,189,248,.38)" stroke-width="1" stroke-dasharray="4 4"/>
+          <!-- 어깨 -->
+          <line x1="12" y1="113" x2="60" y2="113" stroke="rgba(56,189,248,.38)" stroke-width="1" stroke-dasharray="4 4"/>
+          <line x1="220" y1="113" x2="268" y2="113" stroke="rgba(56,189,248,.38)" stroke-width="1" stroke-dasharray="4 4"/>
+          <!-- 가슴 -->
+          <line x1="22" y1="168" x2="88" y2="168" stroke="rgba(56,189,248,.38)" stroke-width="1" stroke-dasharray="4 4"/>
+          <line x1="192" y1="168" x2="258" y2="168" stroke="rgba(56,189,248,.38)" stroke-width="1" stroke-dasharray="4 4"/>
+          <!-- 허리 -->
+          <line x1="22" y1="252" x2="98" y2="252" stroke="rgba(56,189,248,.38)" stroke-width="1" stroke-dasharray="4 4"/>
+          <line x1="182" y1="252" x2="258" y2="252" stroke="rgba(56,189,248,.38)" stroke-width="1" stroke-dasharray="4 4"/>
+          <!-- 골반 -->
+          <line x1="14" y1="306" x2="82" y2="306" stroke="rgba(56,189,248,.38)" stroke-width="1" stroke-dasharray="4 4"/>
+          <line x1="198" y1="306" x2="266" y2="306" stroke="rgba(56,189,248,.38)" stroke-width="1" stroke-dasharray="4 4"/>
+          <!-- 무릎 -->
+          <line x1="22" y1="444" x2="98" y2="444" stroke="rgba(56,189,248,.38)" stroke-width="1" stroke-dasharray="4 4"/>
+          <line x1="182" y1="444" x2="258" y2="444" stroke="rgba(56,189,248,.38)" stroke-width="1" stroke-dasharray="4 4"/>
+
+          <!-- 신체 실루엣 -->
+          <!-- 머리 -->
+          <ellipse cx="140" cy="50" rx="34" ry="39"
+            fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.82)" stroke-width="2.5"
+            filter="url(#bodyGlow)"/>
+
+          <!-- 몸통 + 팔 + 다리 (하나의 패스) -->
+          <path d="
+            M 125,89
+            C 120,89 113,92 108,97
+            L 86,108
+            C 64,113 54,122 57,136
+            L 63,190
+            C 65,202 61,214 56,227
+            L 44,275
+            C 42,284 47,292 56,292
+            L 70,292
+            C 78,292 83,285 85,276
+            L 94,230
+            C 97,218 98,206 98,196
+            L 103,162
+            C 101,151 103,138 108,128
+            L 110,116
+            L 110,318
+            C 110,328 107,338 104,346
+            L 98,424
+            L 94,516
+            L 92,555
+            C 91,564 96,570 105,570
+            L 121,570
+            C 129,570 133,564 133,556
+            L 132,516
+            L 131,424
+            L 139,362
+            L 141,362
+            L 149,424
+            L 148,516
+            L 147,556
+            C 147,564 151,570 159,570
+            L 175,570
+            C 184,570 189,564 188,555
+            L 186,516
+            L 182,424
+            L 176,346
+            C 173,338 170,328 170,318
+            L 170,116
+            L 172,128
+            C 177,138 179,151 177,162
+            L 182,196
+            C 182,206 183,218 186,230
+            L 195,276
+            C 197,285 202,292 210,292
+            L 224,292
+            C 233,292 238,284 236,275
+            L 224,227
+            C 219,214 215,202 217,190
+            L 223,136
+            C 226,122 216,113 194,108
+            L 172,97
+            C 167,92 160,89 155,89
+            Z
+          " fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.78)" stroke-width="2.5"
+            stroke-linejoin="round" stroke-linecap="round" filter="url(#bodyGlow)"
+            class="guideFig"/>
+
+          <!-- 측정 포인트 도트 -->
+          <!-- 머리 상단 -->
+          <circle cx="140" cy="11" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 머리 중앙 -->
+          <circle cx="140" cy="50" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 어깨 좌 -->
+          <circle cx="60" cy="113" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 어깨 중앙 -->
+          <circle cx="140" cy="113" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 어깨 우 -->
+          <circle cx="220" cy="113" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 가슴 좌 -->
+          <circle cx="88" cy="168" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 가슴 중앙 -->
+          <circle cx="140" cy="168" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 가슴 우 -->
+          <circle cx="192" cy="168" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 허리 좌 -->
+          <circle cx="98" cy="252" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 허리 중앙 -->
+          <circle cx="140" cy="252" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 허리 우 -->
+          <circle cx="182" cy="252" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 골반 좌 -->
+          <circle cx="82" cy="306" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 골반 중앙 -->
+          <circle cx="140" cy="306" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 골반 우 -->
+          <circle cx="198" cy="306" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 무릎 좌 -->
+          <circle cx="112" cy="444" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 무릎 우 -->
+          <circle cx="168" cy="444" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
+          <!-- 발 중앙 -->
+          <circle cx="140" cy="570" r="5.5" fill="#38bdf8" filter="url(#dotGlow)" opacity=".95"/>
         </svg>
         <div class="cam-frame"></div>
         <div class="cam-count" id="camCount"></div>
