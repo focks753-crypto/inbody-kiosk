@@ -325,24 +325,26 @@
   .cam-guide .guideFig { fill: #38bdf8; opacity: .22; transition: fill .3s ease; }
   .cam-stage.detected .cam-guide .guideFig { fill: #22c55e; }
   .cam-stage.detected .cam-frame { border-color: rgba(34,197,94,.75); }
-  /* 인식 상태 표시 (카메라 우측) */
-  .cam-detect-status {
-    position: absolute; right: -168px; top: 50%; transform: translateY(-50%);
-    display: flex; flex-direction: column; align-items: flex-start; gap: 18px;
+  /* 카메라 + 상태 텍스트 래퍼 */
+  .cam-layout { display: flex; align-items: center; justify-content: center; gap: 0; }
+  /* 인식 상태 — 카메라 바로 오른쪽에 붙임 */
+  .cam-status-col {
+    width: 130px; display: flex; flex-direction: column; gap: 22px;
+    padding-left: 24px; flex-shrink: 0;
   }
-  .cds-dot {
-    display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 800;
-    color: rgba(255,255,255,.4); transition: color .4s ease;
+  .cds-row {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 15px; font-weight: 800; color: rgba(255,255,255,.3);
+    transition: color .35s ease; white-space: nowrap;
   }
-  .cds-dot .dot-circle {
-    width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,.2);
-    transition: background .4s ease; flex-shrink: 0;
+  .cds-row .cds-circle {
+    width: 11px; height: 11px; border-radius: 50%;
+    background: rgba(255,255,255,.15); flex-shrink: 0;
+    transition: background .35s ease, box-shadow .35s ease;
   }
-  .cam-stage.detected ~ .cam-detect-wrap .cds-dot.no { color: rgba(255,255,255,.2); }
-  .cam-stage.detected ~ .cam-detect-wrap .cds-dot.yes { color: #22c55e; }
-  .cam-stage.detected ~ .cam-detect-wrap .cds-dot.yes .dot-circle { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
-  .cam-stage:not(.detected) ~ .cam-detect-wrap .cds-dot.no { color: rgba(255,255,255,.7); }
-  .cam-stage:not(.detected) ~ .cam-detect-wrap .cds-dot.no .dot-circle { background: rgba(255,255,255,.6); }
+  .cds-row.active { color: rgba(255,255,255,.9); }
+  .cds-row.active-green { color: #22c55e; }
+  .cds-row.active-green .cds-circle { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,.7); }
   .cam-actions { display: flex; gap: 14px; margin-top: 24px; align-items: center; }
   .cam-actions .shoot-btn { margin-top: 0; }
   .cam-switch { border: none; cursor: pointer; background: rgba(255,255,255,.14); color: #fff; font-weight: 800;
@@ -514,42 +516,27 @@
       <button class="btn-back" onclick="closePosture()">← 다시 선택</button>
       <div class="clock"><div class="t" id="clock6">--:--</div></div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:center;gap:48px;width:100%">
+    <div class="cam-layout">
+      <!-- 카메라 -->
       <div class="cam-stage" id="camStage">
         <video id="camVideo" playsinline autoplay muted></video>
         <canvas id="camCanvas"></canvas>
-        <!-- 세련된 스켈레톤 가이드 — 선만 사용, 관절 점 없음 -->
         <svg class="cam-guide" viewBox="0 0 240 520" preserveAspectRatio="xMidYMid meet">
           <g class="guideFig" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <!-- 머리 (원 테두리만) -->
-            <circle cx="120" cy="44" r="30" stroke-width="3" fill="none"/>
-            <!-- 목 -->
-            <line x1="120" y1="74" x2="120" y2="92" stroke-width="2.5"/>
-            <!-- 어깨선 -->
+            <circle cx="120" cy="44" r="30" stroke-width="2.5" fill="none"/>
+            <line x1="120" y1="74" x2="120" y2="92" stroke-width="2"/>
             <line x1="60" y1="105" x2="180" y2="105" stroke-width="2.5"/>
-            <!-- 왼팔 위 -->
-            <line x1="60" y1="105" x2="42" y2="195" stroke-width="2.5"/>
-            <!-- 왼팔 아래 -->
-            <line x1="42" y1="195" x2="30" y2="280" stroke-width="2.5"/>
-            <!-- 오른팔 위 -->
-            <line x1="180" y1="105" x2="198" y2="195" stroke-width="2.5"/>
-            <!-- 오른팔 아래 -->
-            <line x1="198" y1="195" x2="210" y2="280" stroke-width="2.5"/>
-            <!-- 몸통 -->
-            <line x1="60" y1="105" x2="75" y2="235" stroke-width="2.5"/>
-            <line x1="180" y1="105" x2="165" y2="235" stroke-width="2.5"/>
-            <line x1="75" y1="235" x2="165" y2="235" stroke-width="2.5"/>
-            <!-- 골반선 -->
-            <line x1="80" y1="240" x2="160" y2="240" stroke-width="2.5"/>
-            <!-- 왼다리 위 -->
-            <line x1="95" y1="240" x2="88" y2="370" stroke-width="2.5"/>
-            <!-- 왼다리 아래 -->
+            <line x1="60" y1="105" x2="42" y2="195" stroke-width="2"/>
+            <line x1="42" y1="195" x2="30" y2="278" stroke-width="2"/>
+            <line x1="180" y1="105" x2="198" y2="195" stroke-width="2"/>
+            <line x1="198" y1="195" x2="210" y2="278" stroke-width="2"/>
+            <line x1="60" y1="105" x2="75" y2="235" stroke-width="2"/>
+            <line x1="180" y1="105" x2="165" y2="235" stroke-width="2"/>
+            <line x1="75" y1="235" x2="165" y2="235" stroke-width="2"/>
+            <line x1="95" y1="238" x2="88" y2="370" stroke-width="2.5"/>
             <line x1="88" y1="370" x2="82" y2="490" stroke-width="2.5"/>
-            <!-- 오른다리 위 -->
-            <line x1="145" y1="240" x2="152" y2="370" stroke-width="2.5"/>
-            <!-- 오른다리 아래 -->
+            <line x1="145" y1="238" x2="152" y2="370" stroke-width="2.5"/>
             <line x1="152" y1="370" x2="158" y2="490" stroke-width="2.5"/>
-            <!-- 발 (작은 선) -->
             <line x1="72" y1="490" x2="96" y2="490" stroke-width="3"/>
             <line x1="148" y1="490" x2="172" y2="490" stroke-width="3"/>
           </g>
@@ -557,19 +544,19 @@
         <div class="cam-frame"></div>
         <div class="cam-count" id="camCount"></div>
       </div>
-      <!-- 우측 인식 상태 (충분한 간격으로) -->
-      <div id="camDetectWrap" style="display:flex;flex-direction:column;gap:28px;min-width:160px;">
-        <div id="cdsNo" style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.75);font-size:17px;font-weight:800;transition:all .4s">
-          <div style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.6);flex-shrink:0;transition:all .4s"></div>
-          <span>인식 안됨</span>
+      <!-- 인식 상태 — 카메라 바로 오른쪽 -->
+      <div class="cam-status-col">
+        <div class="cds-row active" id="cdsNo">
+          <div class="cds-circle"></div>
+          <span>인식<br>안됨</span>
         </div>
-        <div id="cdsYes" style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.2);font-size:17px;font-weight:800;transition:all .4s">
-          <div style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.1);flex-shrink:0;transition:all .4s"></div>
+        <div class="cds-row" id="cdsYes">
+          <div class="cds-circle"></div>
           <span>인식완료<br>분석 가능</span>
         </div>
       </div>
     </div>
-    <div class="scan-title" style="font-size:30px;margin-top:18px">전신이 들어오게 서주세요</div>
+    <div class="scan-title" style="font-size:28px;margin-top:20px">전신이 들어오게 서주세요</div>
     <div style="display:none" id="camStatus"></div>
     <div class="cam-actions">
       <button class="shoot-btn" onclick="capturePosture()">촬영 (5초 뒤)</button>
@@ -1521,19 +1508,15 @@ function loop(){
     const stage = document.getElementById('camStage');
     const detected = !!latest;
     if(stage) stage.classList.toggle('detected', detected);
-    /* 우측 인식 상태 텍스트 업데이트 */
+    /* 인식 상태 텍스트 업데이트 */
     const no = document.getElementById('cdsNo'), yes = document.getElementById('cdsYes');
     if(no && yes){
       if(detected){
-        no.style.cssText = 'color:rgba(255,255,255,.2)';
-        no.querySelector('.dot-circle').style.cssText = 'width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.1)';
-        yes.style.cssText = 'color:#22c55e;display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800';
-        yes.querySelector('.dot-circle').style.cssText = 'width:14px;height:14px;border-radius:50%;background:#22c55e;box-shadow:0 0 10px #22c55e;flex-shrink:0';
+        no.className = 'cds-row';
+        yes.className = 'cds-row active-green';
       } else {
-        no.style.cssText = 'color:rgba(255,255,255,.7);display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800';
-        no.querySelector('.dot-circle').style.cssText = 'width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.6);flex-shrink:0';
-        yes.style.cssText = 'color:rgba(255,255,255,.2)';
-        yes.querySelector('.dot-circle').style.cssText = 'width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.1)';
+        no.className = 'cds-row active';
+        yes.className = 'cds-row';
       }
     }
     ctx.save();
