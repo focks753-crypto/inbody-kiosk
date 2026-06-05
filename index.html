@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>InBody 스마트 키오스크</title>
+<title>라인핏: 스마트 AI 체형 분석</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
 <style>
@@ -65,20 +65,23 @@
   #start .dot { background: #fff; color: var(--blue); box-shadow: none; }
   .hero-title { font-size: 64px; font-weight: 900; letter-spacing: -2px; line-height: 1.1; }
   .hero-sub { font-size: 22px; opacity: .75; margin-top: 18px; font-weight: 500; }
-  .standby-icon { font-size: 110px; margin-bottom: 18px; animation: float 3s ease-in-out infinite; }
-  @keyframes float { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-14px);} }
-  .standby-pulse {
-    width: 220px; height: 220px; border-radius: 50%; margin: 0 auto 32px;
-    background: rgba(255,255,255,.12);
-    display: grid; place-items: center;
-    box-shadow: 0 0 0 0 rgba(255,255,255,.4);
-    animation: ripple 2.4s infinite;
+  .standby-ring {
+    width: 180px; height: 180px; border-radius: 50%; margin: 0 auto 36px;
+    border: 3px solid rgba(255,255,255,.2);
+    display: grid; place-items: center; position: relative;
   }
-  .standby-pulse .inner { font-size: 90px; }
-  @keyframes ripple {
-    0%  { box-shadow: 0 0 0 0 rgba(255,255,255,.35); }
-    70% { box-shadow: 0 0 0 40px rgba(255,255,255,0); }
-    100%{ box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+  .standby-ring::before {
+    content: ''; position: absolute; inset: -3px; border-radius: 50%;
+    border: 3px solid transparent;
+    border-top-color: rgba(255,255,255,.9);
+    border-right-color: rgba(255,255,255,.5);
+    animation: spin-ring 2s linear infinite;
+  }
+  @keyframes spin-ring { to { transform: rotate(360deg); } }
+  .standby-ring .ring-inner {
+    width: 140px; height: 140px; border-radius: 50%;
+    background: rgba(255,255,255,.1); display: grid; place-items: center;
+    font-size: 52px; font-weight: 900; color: #fff; letter-spacing: -2px;
   }
   .standby-dot { width: 10px; height: 10px; background: rgba(255,255,255,.6); border-radius: 50%;
     display: inline-block; margin: 0 4px; animation: blink 1.4s infinite; }
@@ -322,6 +325,24 @@
   .cam-guide .guideFig { fill: #38bdf8; opacity: .22; transition: fill .3s ease; }
   .cam-stage.detected .cam-guide .guideFig { fill: #22c55e; }
   .cam-stage.detected .cam-frame { border-color: rgba(34,197,94,.75); }
+  /* 인식 상태 표시 (카메라 우측) */
+  .cam-detect-status {
+    position: absolute; right: -168px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; align-items: flex-start; gap: 18px;
+  }
+  .cds-dot {
+    display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 800;
+    color: rgba(255,255,255,.4); transition: color .4s ease;
+  }
+  .cds-dot .dot-circle {
+    width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,.2);
+    transition: background .4s ease; flex-shrink: 0;
+  }
+  .cam-stage.detected ~ .cam-detect-wrap .cds-dot.no { color: rgba(255,255,255,.2); }
+  .cam-stage.detected ~ .cam-detect-wrap .cds-dot.yes { color: #22c55e; }
+  .cam-stage.detected ~ .cam-detect-wrap .cds-dot.yes .dot-circle { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
+  .cam-stage:not(.detected) ~ .cam-detect-wrap .cds-dot.no { color: rgba(255,255,255,.7); }
+  .cam-stage:not(.detected) ~ .cam-detect-wrap .cds-dot.no .dot-circle { background: rgba(255,255,255,.6); }
   .cam-actions { display: flex; gap: 14px; margin-top: 24px; align-items: center; }
   .cam-actions .shoot-btn { margin-top: 0; }
   .cam-switch { border: none; cursor: pointer; background: rgba(255,255,255,.14); color: #fff; font-weight: 800;
@@ -366,10 +387,10 @@
   <!-- 대기 화면 -->
   <section id="start" class="screen active">
     <div class="topbar">
-      <div class="brand"><div class="dot">B</div> InBody 스마트 분석</div>
+      <div class="brand"><div class="dot">B</div> 라인핏</div>
       <div class="clock"><div class="t" id="clock1">--:--</div><div id="date1">----</div></div>
     </div>
-    <div class="standby-pulse"><div class="inner">🏃</div></div>
+    <div class="standby-ring"><div class="ring-inner">LF</div></div>
     <h1 class="hero-title">인바디를 측정하세요</h1>
     <p class="hero-sub">측정이 완료되면 자동으로 결과가 표시됩니다</p>
     <div style="margin-top:28px">
@@ -377,7 +398,7 @@
       <span class="standby-dot"></span>
       <span class="standby-dot"></span>
     </div>
-    <button class="recent-btn" onclick="openRecentPanel()">🕐 최근 검사 회원 확인</button>
+    <button class="recent-btn" onclick="openRecentPanel()">최근 검사 회원 확인</button>
   </section>
 
   <!-- 최근 검사 회원 패널 -->
@@ -401,7 +422,7 @@
       <div class="rs-left" id="rsInbodyPanel"></div>
       <!-- 가운데: AI 분석 요약 -->
       <div class="rs-center" id="rsAiPanel">
-        <div class="ai-tag">✨ AI 분석</div>
+        <div class="ai-tag">AI 분석</div>
         <div class="ai-title" id="rsHello">측정 결과를 분석하고 있어요</div>
         <div class="ai-summary" id="rsAiSummary">분석 중...</div>
       </div>
@@ -493,39 +514,42 @@
       <button class="btn-back" onclick="closePosture()">← 다시 선택</button>
       <div class="clock"><div class="t" id="clock6">--:--</div></div>
     </div>
-    <div class="cam-stage" id="camStage">
-      <video id="camVideo" playsinline autoplay muted></video>
-      <canvas id="camCanvas"></canvas>
-      <svg class="cam-guide" viewBox="0 0 240 520" preserveAspectRatio="xMidYMid meet">
-        <g class="guideFig">
-          <!-- 머리 -->
-          <circle cx="120" cy="44" r="32"/>
-          <!-- 목 -->
-          <rect x="112" y="72" width="16" height="18" rx="7"/>
-          <!-- 몸통 -->
-          <path d="M66 100 Q120 82 174 100 L162 240 Q120 252 78 240 Z"/>
-          <!-- 왼팔 -->
-          <rect x="46" y="98" width="18" height="130" rx="9" transform="rotate(16 55 106)"/>
-          <!-- 오른팔 -->
-          <rect x="176" y="98" width="18" height="130" rx="9" transform="rotate(-16 185 106)"/>
-          <!-- 왼 허벅지 -->
-          <rect x="88" y="238" width="20" height="120" rx="10" transform="rotate(4 98 250)"/>
-          <!-- 오른 허벅지 -->
-          <rect x="132" y="238" width="20" height="120" rx="10" transform="rotate(-4 142 250)"/>
-          <!-- 왼 종아리 -->
-          <rect x="84" y="354" width="18" height="110" rx="9" transform="rotate(-3 93 404)"/>
-          <!-- 오른 종아리 -->
-          <rect x="138" y="354" width="18" height="110" rx="9" transform="rotate(3 147 404)"/>
-          <!-- 발 -->
-          <ellipse cx="93" cy="470" rx="22" ry="9"/>
-          <ellipse cx="147" cy="470" rx="22" ry="9"/>
-        </g>
-      </svg>
-      <div class="cam-frame"></div>
-      <div class="cam-count" id="camCount"></div>
+    <div style="display:flex;align-items:center;gap:32px">
+      <div class="cam-stage" id="camStage">
+        <video id="camVideo" playsinline autoplay muted></video>
+        <canvas id="camCanvas"></canvas>
+        <svg class="cam-guide" viewBox="0 0 240 520" preserveAspectRatio="xMidYMid meet">
+          <g class="guideFig">
+            <circle cx="120" cy="44" r="32"/>
+            <rect x="112" y="72" width="16" height="18" rx="7"/>
+            <path d="M66 100 Q120 82 174 100 L162 240 Q120 252 78 240 Z"/>
+            <rect x="46" y="98" width="18" height="130" rx="9" transform="rotate(16 55 106)"/>
+            <rect x="176" y="98" width="18" height="130" rx="9" transform="rotate(-16 185 106)"/>
+            <rect x="88" y="238" width="20" height="120" rx="10" transform="rotate(4 98 250)"/>
+            <rect x="132" y="238" width="20" height="120" rx="10" transform="rotate(-4 142 250)"/>
+            <rect x="84" y="354" width="18" height="110" rx="9" transform="rotate(-3 93 404)"/>
+            <rect x="138" y="354" width="18" height="110" rx="9" transform="rotate(3 147 404)"/>
+            <ellipse cx="93" cy="470" rx="22" ry="9"/>
+            <ellipse cx="147" cy="470" rx="22" ry="9"/>
+          </g>
+        </svg>
+        <div class="cam-frame"></div>
+        <div class="cam-count" id="camCount"></div>
+      </div>
+      <!-- 우측 인식 상태 표시 -->
+      <div class="cam-detect-wrap" id="camDetectWrap" style="display:flex;flex-direction:column;gap:22px;">
+        <div class="cds-dot no" id="cdsNo">
+          <div class="dot-circle"></div>
+          <span>인식 안됨</span>
+        </div>
+        <div class="cds-dot yes" id="cdsYes" style="color:rgba(255,255,255,.2)">
+          <div class="dot-circle" style="background:rgba(255,255,255,.15)"></div>
+          <span>인식완료<br>분석 가능</span>
+        </div>
+      </div>
     </div>
-    <div class="scan-title">정면을 바라보고 서주세요</div>
-    <div class="scan-sub" id="camStatus">촬영 버튼을 누르면 5초 카운트가 시작됩니다. 전신이 담기게 맞춰주세요.</div>
+    <div class="scan-title" style="font-size:32px;margin-top:20px">전신이 들어오게 서주세요</div>
+    <div class="scan-sub" id="camStatus">촬영 버튼을 누르면 5초 카운트가 시작됩니다</div>
     <div class="cam-actions">
       <button class="shoot-btn" onclick="capturePosture()">촬영 (5초 뒤)</button>
       <button class="cam-switch" onclick="if(window.switchCamera)window.switchCamera()">카메라 전환</button>
@@ -552,7 +576,7 @@
       <div class="panel" id="aiPanel"></div>
     </div>
     <div class="result-actions">
-      <button class="act ghost" onclick="window.print()">🖨️ 결과 인쇄</button>
+      <button class="act ghost" onclick="window.print()">결과 인쇄</button>
       <button class="act primary" onclick="go('start')">완료 ✓</button>
     </div>
   </section>
@@ -569,7 +593,7 @@
       <div class="panel" id="poseRight"></div>
     </div>
     <div class="result-actions">
-      <button class="act ghost" onclick="window.print()">🖨️ 결과 인쇄</button>
+      <button class="act ghost" onclick="window.print()">결과 인쇄</button>
       <button class="act primary" onclick="go('start')">완료 ✓</button>
     </div>
   </section>
@@ -717,13 +741,13 @@ function buildWeek(){
       const sp = splits[splitIdx++];
       const lines = buildExercises(sp.muscles, plan.equip).map(e=>({n:e[0], s:e[1]}));
       /* 주1~2회: 운동일 마다 유산소 추가 */
-      if(freq <= 2) lines.push({n:'🏃 '+cardioTxt, s:'운동 마무리'});
+      if(freq <= 2) lines.push({n:cardioTxt, s:'운동 마무리'});
       week.push({day:WEEKDAYS[d], type:'train', focus:sp.name, ex:lines});
     } else if(cardioDays.has(d)){
       week.push({day:WEEKDAYS[d], type:'cardio', focus:'유산소 / 회복',
-        ex:[{n:'🏃 '+cardioTxt, s:''},{n:'스트레칭·폼롤러', s:'10분'}]});
+        ex:[{n:cardioTxt, s:''},{n:'스트레칭·폼롤러', s:'10분'}]});
     } else {
-      week.push({day:WEEKDAYS[d], type:'rest', focus:'😴 휴식', ex:[]});
+      week.push({day:WEEKDAYS[d], type:'rest', focus:'휴식', ex:[]});
     }
   }
   return week;
@@ -868,7 +892,7 @@ function renderPosture(p, aiText){
     ${lastPosePhoto ? `<div class="pose-photo"><img src="${lastPosePhoto}" alt="촬영 사진"/></div>` : ''}
     ${poseDiagram(p)}`;
 
-  let html = `<div class="ai-head"><span class="ai-badge">📷 자세 분석</span><h2>${m.name}님 체형 리포트</h2></div>`;
+  let html = `<div class="ai-head"><span class="ai-badge">자세 분석</span><h2>${m.name}님 체형 리포트</h2></div>`;
   if(!p.real){
     html += `<div class="ai-item" style="border-left-color:#f59e0b;margin-bottom:6px"><div class="d" style="color:var(--ink)">⚠ 카메라 인식이 어려워 데모 데이터로 표시합니다. 몸 전체가 보이게 다시 촬영해보세요.</div></div>`;
   }
@@ -879,7 +903,7 @@ function renderPosture(p, aiText){
   html += `<div class="ai-item" style="border-left-color:#94a3b8;margin-top:14px"><div class="d">ℹ 거북목·굽은등은 <b>측면(옆모습) 촬영</b> 시, 다리 정렬은 <b>전신 촬영</b> 시 분석됩니다.</div></div>`;
 
   if(aiText){
-    html += `<div class="ai-section"><div class="ai-head" style="margin-bottom:10px"><span class="ai-badge">✨ Claude AI</span><h2 style="font-size:22px">AI 교정 분석</h2></div><div class="ai-report">${mdToHtml(aiText)}</div></div>`;
+    html += `<div class="ai-section"><div class="ai-head" style="margin-bottom:10px"><span class="ai-badge">Claude AI</span><h2 style="font-size:22px">AI 교정 분석</h2></div><div class="ai-report">${mdToHtml(aiText)}</div></div>`;
   } else {
     const fixes = [];
     if(Math.abs(p.shDeg)>=1.5 || Math.abs(p.pelDeg)>=1.5) fixes.push({t:'좌우 불균형 교정', d:'높은 쪽 근육은 스트레칭으로 이완, 낮은 쪽은 강화하는 비대칭 보정 운동을 권장합니다.'});
@@ -1004,7 +1028,13 @@ function buildPrompt(type){
     p += `\n위 등급 목표와 운동 조건에 맞춰 "주간 운동 루틴"을 월~일 요일별로 구체적으로 작성하세요. 등급 ${fl.level}→${fl.next||'유지'} 달성에 최적화된 루틴이어야 합니다.\n`;
   }
   if(type==='diet' || type==='full'){
-    p += `\n[식단 목표]\n등급 ${fl.level}에서 ${fl.next?`${fl.next}(골격근량 ${fl.smmTarget}kg / 체지방률 ${fl.bfpTarget}%)`:'현재 최상 유지'}이 되기 위한 하루 식단을 아침/점심/저녁/간식으로 구체적인 음식과 양으로 작성하세요. 하루 권장 칼로리·단백질량·탄수화물 비율도 제시하세요.\n`;
+    const proteinDaily = Math.round(m.weight * 2);
+    const proteinPerMeal = Math.round(proteinDaily / 3);
+    const losing = m.bfp >= (m.sex==='여' ? 28 : 20);
+    const carbsDaily = Math.round(m.weight * (losing ? 2.5 : 4));
+    const kcal = Math.round(m.weight * (losing ? 30 : 38));
+    const smmTarget = fl.smmTarget || (m.smm + 2);
+    p += `\n[식단 영양 기준 — 반드시 준수]\n- 하루 목표 칼로리: ${kcal}kcal\n- 단백질: 하루 ${proteinDaily}g (체중 ${m.weight}kg × 2) → 끼니당 ${proteinPerMeal}g 이상 배분\n- 탄수화물: 하루 ${carbsDaily}g → 끼니당 ${Math.round(carbsDaily/3)}g\n- 목표 골격근량: ${smmTarget}kg (현재 ${m.smm}kg에서 증가)\n\n[식단 형식]\n아침/점심/저녁 각각 — 구체적인 음식명 + 양(g 또는 개수) + 해당 끼니의 단백질g·탄수화물g 명시\n위 영양 기준을 정확히 충족하도록 설계하세요.\n`;
   }
   p += `\n[작성 규칙]\n- 마크다운 (## 제목, **굵게**, - 목록)\n- 친근하고 전문적인 톤\n- 등급 정보는 노출하지 말고 목표 수치(근육/체지방)와 식단/운동 위주로 설명\n- 핵심 위주로 간결하게`;
   return p;
@@ -1091,8 +1121,9 @@ function capturePosture(){
     if(n > 0){ show(n); }
     else {
       clearInterval(countTimer); countTimer = null;
-      show('📸');
-      setTimeout(()=>{ countEl.classList.remove('show'); countEl.style.display='none'; doCapture(); }, 500);
+      countEl.style.fontSize = '36px';
+      countEl.textContent = '분석 중...';
+      setTimeout(()=>{ countEl.classList.remove('show'); countEl.style.display='none'; doCapture(); }, 700);
     }
   }, 1000);
 }
@@ -1177,7 +1208,7 @@ function renderResult(type, aiText){
   /* 오른쪽: AI 리포트 */
   let html;
   if(aiText){
-    html = `<div class="ai-head"><span class="ai-badge">✨ Claude AI</span><h2>${m.name}님 맞춤 리포트</h2></div>
+    html = `<div class="ai-head"><span class="ai-badge">Claude AI</span><h2>${m.name}님 맞춤 리포트</h2></div>
       <div class="ai-report">${mdToHtml(aiText)}</div>`;
   } else {
     /* Claude 연결 실패 시 임시 규칙 기반 추천 */
@@ -1239,38 +1270,40 @@ function inbodyFieldMap(d){
 
 /* AI 기본 분석 요약 생성 */
 function buildAiSummary(m){
+  const fl = getFitnessLevel(m);
   const losing = m.bfp >= (m.sex==='여' ? 28 : 20);
-  const lowMuscle = m.smm < (m.sex==='여' ? 20 : 30);
   const goodScore = m.score >= 80;
+
+  /* 단백질: 체중 × 2, 3끼 균등 분배 */
+  const proteinDaily = Math.round(m.weight * 2);
+  const proteinPerMeal = Math.round(proteinDaily / 3);
+  /* 탄수화물: 감량이면 체중×2.5, 증량이면 체중×4 */
+  const carbsDaily = Math.round(m.weight * (losing ? 2.5 : 4));
+  const carbsPerMeal = Math.round(carbsDaily / 3);
   const kcal = Math.round(m.weight * (losing ? 30 : 38));
-  const protein = Math.round(m.weight * (losing ? 1.6 : 2.0));
+  /* 근육량 목표 */
+  const smmTarget = fl.smmTarget || (m.smm + 2);
 
   let pts = [];
+
   pts.push(`<div class="ai-pt ${goodScore?'good':'warn'}">
-    <b>인바디 점수 ${m.score}점</b> — ${goodScore ? '전반적으로 양호한 체성분입니다.' : '체성분 개선이 필요한 상태입니다.'} 목표: <b>${m.target}</b>
+    <b>인바디 점수 ${m.score}점 (${fl.level})</b> — ${fl.desc}
+    ${fl.next ? `<br>목표: <b>${fl.next} 등급</b> → 골격근량 <b>${smmTarget}kg</b> · 체지방률 <b>${fl.bfpTarget}%</b>` : ''}
   </div>`);
 
-  if(losing){
-    pts.push(`<div class="ai-pt warn">
-      <b>체지방률 ${m.bfp}%</b> — 정상 범위보다 높습니다. 하루 <b>${kcal}kcal</b> 이내로 섭취하고, 단백질은 <b>${protein}g</b> 이상 유지하세요.
-    </div>`);
-  } else {
-    pts.push(`<div class="ai-pt good">
-      <b>체지방률 ${m.bfp}%</b> — 양호한 수준입니다. 근육 성장을 위해 하루 <b>${kcal}kcal</b>, 단백질 <b>${protein}g</b>을 목표로 하세요.
-    </div>`);
-  }
+  pts.push(`<div class="ai-pt ${losing?'warn':'good'}">
+    <b>하루 영양 목표</b><br>
+    칼로리 <b>${kcal}kcal</b> · 단백질 <b>${proteinDaily}g</b> · 탄수화물 <b>${carbsDaily}g</b><br>
+    <span style="font-size:14px;color:var(--slate)">끼니당: 단백질 <b>${proteinPerMeal}g</b> / 탄수화물 <b>${carbsPerMeal}g</b></span>
+  </div>`);
 
-  if(lowMuscle){
-    pts.push(`<div class="ai-pt warn">
-      <b>골격근량 ${m.smm}kg</b> — 근육량이 부족합니다. 주 3회 이상 근력운동과 충분한 단백질 섭취로 근육을 늘려야 합니다.
-    </div>`);
-  } else {
-    pts.push(`<div class="ai-pt good">
-      <b>골격근량 ${m.smm}kg</b> — 근육량이 양호합니다. 현재 수준을 유지하면서 체성분 목표에 집중하세요.
-    </div>`);
-  }
+  pts.push(`<div class="ai-pt">
+    <b>골격근량 ${m.smm}kg → 목표 ${smmTarget}kg</b><br>
+    ${losing ? `체지방 감량 우선 — 단백질 ${proteinDaily}g을 지키면 근육을 보호하면서 체지방을 줄일 수 있습니다.`
+             : `근육 증가 집중 — 하루 단백질 ${proteinDaily}g(끼니당 ${proteinPerMeal}g 이상)을 꾸준히 섭취하세요.`}
+  </div>`);
 
-  pts.push(`<div class="ai-pt" style="border-left-color:var(--cyan)">
+  pts.push(`<div class="ai-pt" style="border-left-color:var(--blue)">
     오른쪽 메뉴에서 <b>AI 운동루틴</b> 또는 <b>AI 맞춤식단</b>을 선택하면 개인화된 상세 분석을 받을 수 있습니다.
   </div>`);
 
@@ -1445,7 +1478,23 @@ function loop(){
     try { res = pose.detectForVideo(vid, performance.now()); } catch(e){}
     latest = (res && res.landmarks && res.landmarks.length) ? res.landmarks[0] : null;
     const stage = document.getElementById('camStage');
-    if(stage) stage.classList.toggle('detected', !!latest);
+    const detected = !!latest;
+    if(stage) stage.classList.toggle('detected', detected);
+    /* 우측 인식 상태 텍스트 업데이트 */
+    const no = document.getElementById('cdsNo'), yes = document.getElementById('cdsYes');
+    if(no && yes){
+      if(detected){
+        no.style.cssText = 'color:rgba(255,255,255,.2)';
+        no.querySelector('.dot-circle').style.cssText = 'width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.1)';
+        yes.style.cssText = 'color:#22c55e;display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800';
+        yes.querySelector('.dot-circle').style.cssText = 'width:14px;height:14px;border-radius:50%;background:#22c55e;box-shadow:0 0 10px #22c55e;flex-shrink:0';
+      } else {
+        no.style.cssText = 'color:rgba(255,255,255,.7);display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800';
+        no.querySelector('.dot-circle').style.cssText = 'width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.6);flex-shrink:0';
+        yes.style.cssText = 'color:rgba(255,255,255,.2)';
+        yes.querySelector('.dot-circle').style.cssText = 'width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.1)';
+      }
+    }
     ctx.save();
     ctx.clearRect(0,0,canvas.width,canvas.height);
     if(res && res.landmarks){
