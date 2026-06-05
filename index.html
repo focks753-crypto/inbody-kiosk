@@ -1042,13 +1042,10 @@ function buildPrompt(type){
     p += `\n위 등급 목표와 운동 조건에 맞춰 "주간 운동 루틴"을 월~일 요일별로 구체적으로 작성하세요. 등급 ${fl.level}→${fl.next||'유지'} 달성에 최적화된 루틴이어야 합니다.\n`;
   }
   if(type==='diet' || type==='full'){
-    const proteinDaily = Math.round(m.weight * 2);
-    const proteinPerMeal = Math.round(proteinDaily / 3);
-    const losing = m.bfp >= (m.sex==='여' ? 28 : 20);
-    const carbsDaily = Math.round(m.weight * (losing ? 2.5 : 4));
-    const kcal = Math.round(m.weight * (losing ? 30 : 38));
+    const nut = calcNutrition(m);
     const smmTarget = fl.smmTarget || (m.smm + 2);
-    p += `\n[식단 영양 기준 — 반드시 준수]\n- 하루 목표 칼로리: ${kcal}kcal\n- 단백질: 하루 ${proteinDaily}g (체중 ${m.weight}kg × 2) → 끼니당 ${proteinPerMeal}g 이상 배분\n- 탄수화물: 하루 ${carbsDaily}g → 끼니당 ${Math.round(carbsDaily/3)}g\n- 목표 골격근량: ${smmTarget}kg (현재 ${m.smm}kg에서 증가)\n\n[식단 형식]\n아침/점심/저녁 각각 — 구체적인 음식명 + 양(g 또는 개수) + 해당 끼니의 단백질g·탄수화물g 명시\n위 영양 기준을 정확히 충족하도록 설계하세요.\n`;
+    const goalLabel = { '감량':'체지방 감량', '유지':'체성분 유지', '증량':'근육 증가' }[nut.goal];
+    p += `\n[식단 목적: ${goalLabel}]\n[영양 기준 — 반드시 이 수치에 맞게 설계]\n- 하루 칼로리: ${nut.kcalStr}\n- 단백질: ${nut.pStr} (끼니당 ${nut.pMeal})\n- 탄수화물: ${nut.cStr} (끼니당 ${nut.cMeal})\n- 지방: ${nut.fStr}\n- 목표 골격근량: ${smmTarget}kg (현재 ${m.smm}kg)\n\n[식단 형식 — 아침/점심/저녁 각각]\n음식명 + 양(g) + 해당 끼니 단백질g/탄수화물g/지방g 명시\n3끼 합계가 위 기준에 맞도록 정확히 배분하세요.\n간식이 필요하면 별도로 추가하되 총량 내에서 조정.\n`;
   }
   p += `\n[작성 규칙]\n- 마크다운 (## 제목, **굵게**, - 목록)\n- 친근하고 전문적인 톤\n- 등급 정보는 노출하지 말고 목표 수치(근육/체지방)와 식단/운동 위주로 설명\n- 핵심 위주로 간결하게`;
   return p;
@@ -1283,38 +1280,68 @@ function inbodyFieldMap(d){
 }
 
 /* AI 기본 분석 요약 생성 */
+/* 영양 목표 계산 (성별·목적별 정확한 공식) */
+function calcNutrition(m){
+  const isMale = m.sex === '남';
+  const w = m.weight;
+  /* 목적 결정 */
+  const highBfp = m.bfp >= (isMale ? 20 : 28);
+  const lowSmm  = m.smm  < (isMale ? 32 : 22);
+  const goal = (highBfp || /감량|체지방|체중/.test(m.target)) ? '감량'
+             : (lowSmm  || /근육|증량/.test(m.target)) ? '증량'
+             : '유지';
+  /* 범위 반환 [min, max] */
+  let p, c, f;
+  if(isMale){
+    p = [w*2.0, w*2.0];
+    if(goal==='감량')  { c=[w*2, w*3]; f=[w*0.6, w*0.8]; }
+    else if(goal==='유지') { c=[w*3, w*4]; f=[w*0.8, w*0.8]; }
+    else               { c=[w*4, w*6]; f=[w*0.8, w*1.0]; }
+  } else {
+    p = [w*1.8, w*2.0];
+    if(goal==='감량')  { c=[w*1.5, w*2.5]; f=[w*0.6, w*0.8]; }
+    else if(goal==='유지') { c=[w*2.5, w*3.5]; f=[w*0.8, w*0.8]; }
+    else               { c=[w*3.5, w*5.0]; f=[w*0.8, w*1.0]; }
+  }
+  const rng = (a)=> a[0]===a[1] ? `${Math.round(a[0])}g` : `${Math.round(a[0])}~${Math.round(a[1])}g`;
+  const rngM = (a)=> a[0]===a[1] ? `${Math.round(a[0]/3)}g` : `${Math.round(a[0]/3)}~${Math.round(a[1]/3)}g`;
+  const kcalMin = Math.round(p[0]*4 + c[0]*4 + f[0]*9);
+  const kcalMax = Math.round(p[1]*4 + c[1]*4 + f[1]*9);
+  const kcalStr = kcalMin===kcalMax ? `${kcalMin}kcal` : `${kcalMin}~${kcalMax}kcal`;
+  return { goal, pStr:rng(p), cStr:rng(c), fStr:rng(f), pMeal:rngM(p), cMeal:rngM(c), kcalStr, pRaw:p, cRaw:c, fRaw:f };
+}
+
 function buildAiSummary(m){
   const fl = getFitnessLevel(m);
-  const losing = m.bfp >= (m.sex==='여' ? 28 : 20);
   const goodScore = m.score >= 80;
+  const nut = calcNutrition(m);
+  const smmTarget = fl.smmTarget || +(m.smm + 2).toFixed(1);
 
-  /* 단백질: 체중 × 2, 3끼 균등 분배 */
-  const proteinDaily = Math.round(m.weight * 2);
-  const proteinPerMeal = Math.round(proteinDaily / 3);
-  /* 탄수화물: 감량이면 체중×2.5, 증량이면 체중×4 */
-  const carbsDaily = Math.round(m.weight * (losing ? 2.5 : 4));
-  const carbsPerMeal = Math.round(carbsDaily / 3);
-  const kcal = Math.round(m.weight * (losing ? 30 : 38));
-  /* 근육량 목표 */
-  const smmTarget = fl.smmTarget || (m.smm + 2);
+  const goalLabel = { '감량':'체지방 감량', '유지':'체성분 유지', '증량':'근육 증가' }[nut.goal];
+  const goalDesc = {
+    '감량':'체지방을 줄이면서 근육을 최대한 보호하는 영양 플랜입니다.',
+    '유지':'현재 체성분을 유지하면서 컨디션을 관리하는 플랜입니다.',
+    '증량':'근육 성장을 극대화하기 위한 칼로리 서포트 플랜입니다.'
+  }[nut.goal];
 
   let pts = [];
 
+  /* 등급은 내부 지표 — 화면에 표시하지 않음 */
   pts.push(`<div class="ai-pt ${goodScore?'good':'warn'}">
-    <b>인바디 점수 ${m.score}점 (${fl.level})</b> — ${fl.desc}
-    ${fl.next ? `<br>목표: <b>${fl.next} 등급</b> → 골격근량 <b>${smmTarget}kg</b> · 체지방률 <b>${fl.bfpTarget}%</b>` : ''}
+    <b>인바디 점수 ${m.score}점</b> — ${goodScore ? '전반적으로 양호한 체성분입니다.' : '체성분 개선이 필요한 상태입니다.'}
+    <br>목표 골격근량 <b>${smmTarget}kg</b> / 목표 체지방률 <b>${fl.bfpTarget || (m.bfp - 3).toFixed(1)}%</b>
   </div>`);
 
-  pts.push(`<div class="ai-pt ${losing?'warn':'good'}">
-    <b>하루 영양 목표</b><br>
-    칼로리 <b>${kcal}kcal</b> · 단백질 <b>${proteinDaily}g</b> · 탄수화물 <b>${carbsDaily}g</b><br>
-    <span style="font-size:14px;color:var(--slate)">끼니당: 단백질 <b>${proteinPerMeal}g</b> / 탄수화물 <b>${carbsPerMeal}g</b></span>
+  pts.push(`<div class="ai-pt ${nut.goal==='감량'?'warn':'good'}">
+    <b>${goalLabel} 기준 하루 영양 목표</b><br>
+    칼로리 <b>${nut.kcalStr}</b><br>
+    단백질 <b>${nut.pStr}</b> · 탄수화물 <b>${nut.cStr}</b> · 지방 <b>${nut.fStr}</b><br>
+    <span style="font-size:13px;color:var(--slate)">끼니당: 단백질 <b>${nut.pMeal}</b> / 탄수화물 <b>${nut.cMeal}</b></span>
   </div>`);
 
   pts.push(`<div class="ai-pt">
     <b>골격근량 ${m.smm}kg → 목표 ${smmTarget}kg</b><br>
-    ${losing ? `체지방 감량 우선 — 단백질 ${proteinDaily}g을 지키면 근육을 보호하면서 체지방을 줄일 수 있습니다.`
-             : `근육 증가 집중 — 하루 단백질 ${proteinDaily}g(끼니당 ${proteinPerMeal}g 이상)을 꾸준히 섭취하세요.`}
+    ${goalDesc}
   </div>`);
 
   pts.push(`<div class="ai-pt" style="border-left-color:var(--blue)">
