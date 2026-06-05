@@ -486,7 +486,7 @@
     <div class="head"><h1>운동 계획을 세워볼게요</h1><p>선택하신 조건에 맞춰 월~일 주간 루틴을 짜드립니다</p></div>
     <div class="opt-scroll">
       <div class="opt-section">
-        <div class="lbl"><span class="em">📅</span> 일주일에 몇 번 운동하세요?</div>
+        <div class="lbl">일주일에 몇 번 운동하세요?</div>
         <div class="chips">
           <div class="chip" data-group="freq" onclick="pickChip(this,'freq',1)">주 1회</div>
           <div class="chip" data-group="freq" onclick="pickChip(this,'freq',2)">주 2회</div>
@@ -497,7 +497,7 @@
         </div>
       </div>
       <div class="opt-section">
-        <div class="lbl"><span class="em">🏋️</span> 어떤 환경에서 운동하세요?</div>
+        <div class="lbl">어떤 환경에서 운동하세요?</div>
         <div class="chips">
           <div class="chip" data-group="equip" onclick="pickChip(this,'equip','gym')">헬스장</div>
           <div class="chip" data-group="equip" onclick="pickChip(this,'equip','home')">홈트</div>
@@ -514,47 +514,67 @@
       <button class="btn-back" onclick="closePosture()">← 다시 선택</button>
       <div class="clock"><div class="t" id="clock6">--:--</div></div>
     </div>
-    <div style="display:flex;align-items:center;gap:32px">
+    <div style="display:flex;align-items:center;justify-content:center;gap:48px;width:100%">
       <div class="cam-stage" id="camStage">
         <video id="camVideo" playsinline autoplay muted></video>
         <canvas id="camCanvas"></canvas>
+        <!-- 세련된 스켈레톤 가이드 — 선만 사용, 관절 점 없음 -->
         <svg class="cam-guide" viewBox="0 0 240 520" preserveAspectRatio="xMidYMid meet">
-          <g class="guideFig">
-            <circle cx="120" cy="44" r="32"/>
-            <rect x="112" y="72" width="16" height="18" rx="7"/>
-            <path d="M66 100 Q120 82 174 100 L162 240 Q120 252 78 240 Z"/>
-            <rect x="46" y="98" width="18" height="130" rx="9" transform="rotate(16 55 106)"/>
-            <rect x="176" y="98" width="18" height="130" rx="9" transform="rotate(-16 185 106)"/>
-            <rect x="88" y="238" width="20" height="120" rx="10" transform="rotate(4 98 250)"/>
-            <rect x="132" y="238" width="20" height="120" rx="10" transform="rotate(-4 142 250)"/>
-            <rect x="84" y="354" width="18" height="110" rx="9" transform="rotate(-3 93 404)"/>
-            <rect x="138" y="354" width="18" height="110" rx="9" transform="rotate(3 147 404)"/>
-            <ellipse cx="93" cy="470" rx="22" ry="9"/>
-            <ellipse cx="147" cy="470" rx="22" ry="9"/>
+          <g class="guideFig" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <!-- 머리 (원 테두리만) -->
+            <circle cx="120" cy="44" r="30" stroke-width="3" fill="none"/>
+            <!-- 목 -->
+            <line x1="120" y1="74" x2="120" y2="92" stroke-width="2.5"/>
+            <!-- 어깨선 -->
+            <line x1="60" y1="105" x2="180" y2="105" stroke-width="2.5"/>
+            <!-- 왼팔 위 -->
+            <line x1="60" y1="105" x2="42" y2="195" stroke-width="2.5"/>
+            <!-- 왼팔 아래 -->
+            <line x1="42" y1="195" x2="30" y2="280" stroke-width="2.5"/>
+            <!-- 오른팔 위 -->
+            <line x1="180" y1="105" x2="198" y2="195" stroke-width="2.5"/>
+            <!-- 오른팔 아래 -->
+            <line x1="198" y1="195" x2="210" y2="280" stroke-width="2.5"/>
+            <!-- 몸통 -->
+            <line x1="60" y1="105" x2="75" y2="235" stroke-width="2.5"/>
+            <line x1="180" y1="105" x2="165" y2="235" stroke-width="2.5"/>
+            <line x1="75" y1="235" x2="165" y2="235" stroke-width="2.5"/>
+            <!-- 골반선 -->
+            <line x1="80" y1="240" x2="160" y2="240" stroke-width="2.5"/>
+            <!-- 왼다리 위 -->
+            <line x1="95" y1="240" x2="88" y2="370" stroke-width="2.5"/>
+            <!-- 왼다리 아래 -->
+            <line x1="88" y1="370" x2="82" y2="490" stroke-width="2.5"/>
+            <!-- 오른다리 위 -->
+            <line x1="145" y1="240" x2="152" y2="370" stroke-width="2.5"/>
+            <!-- 오른다리 아래 -->
+            <line x1="152" y1="370" x2="158" y2="490" stroke-width="2.5"/>
+            <!-- 발 (작은 선) -->
+            <line x1="72" y1="490" x2="96" y2="490" stroke-width="3"/>
+            <line x1="148" y1="490" x2="172" y2="490" stroke-width="3"/>
           </g>
         </svg>
         <div class="cam-frame"></div>
         <div class="cam-count" id="camCount"></div>
       </div>
-      <!-- 우측 인식 상태 표시 -->
-      <div class="cam-detect-wrap" id="camDetectWrap" style="display:flex;flex-direction:column;gap:22px;">
-        <div class="cds-dot no" id="cdsNo">
-          <div class="dot-circle"></div>
+      <!-- 우측 인식 상태 (충분한 간격으로) -->
+      <div id="camDetectWrap" style="display:flex;flex-direction:column;gap:28px;min-width:160px;">
+        <div id="cdsNo" style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.75);font-size:17px;font-weight:800;transition:all .4s">
+          <div style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.6);flex-shrink:0;transition:all .4s"></div>
           <span>인식 안됨</span>
         </div>
-        <div class="cds-dot yes" id="cdsYes" style="color:rgba(255,255,255,.2)">
-          <div class="dot-circle" style="background:rgba(255,255,255,.15)"></div>
+        <div id="cdsYes" style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.2);font-size:17px;font-weight:800;transition:all .4s">
+          <div style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.1);flex-shrink:0;transition:all .4s"></div>
           <span>인식완료<br>분석 가능</span>
         </div>
       </div>
     </div>
-    <div class="scan-title" style="font-size:32px;margin-top:20px">전신이 들어오게 서주세요</div>
-    <div class="scan-sub" id="camStatus">촬영 버튼을 누르면 5초 카운트가 시작됩니다</div>
+    <div class="scan-title" style="font-size:30px;margin-top:18px">전신이 들어오게 서주세요</div>
+    <div style="display:none" id="camStatus"></div>
     <div class="cam-actions">
       <button class="shoot-btn" onclick="capturePosture()">촬영 (5초 뒤)</button>
       <button class="cam-switch" onclick="if(window.switchCamera)window.switchCamera()">카메라 전환</button>
     </div>
-    <div class="scan-demo">체형측정(상반신)도 가능합니다</div>
   </section>
 
   <!-- LOADING -->
@@ -577,7 +597,7 @@
     </div>
     <div class="result-actions">
       <button class="act ghost" onclick="window.print()">결과 인쇄</button>
-      <button class="act primary" onclick="go('start')">완료 ✓</button>
+      <button class="act primary" onclick="go('start')">완료</button>
     </div>
   </section>
 
@@ -594,7 +614,7 @@
     </div>
     <div class="result-actions">
       <button class="act ghost" onclick="window.print()">결과 인쇄</button>
-      <button class="act primary" onclick="go('start')">완료 ✓</button>
+      <button class="act primary" onclick="go('start')">완료</button>
     </div>
   </section>
 
@@ -707,45 +727,39 @@ function buildWeek(){
   const freq = plan.freq;
   const splits = splitFor(freq);
   const days = DAYMAP[freq];
+  const equip = plan.equip;
   const losing = current.bfp >= (current.sex==='여' ? 28 : 20) || /감량|체지방|체중/.test(current.target);
-  const cardioTxt = losing ? '유산소 30분 (중강도)' : '가벼운 유산소 20분';
-  const week = [];
-  let si = 0;
 
-  /* 유산소 배치 전략:
-     주1~2회 → 운동일마다 무조건 유산소 포함
-     주3회↑  → 쉬는 날 중 2일을 유산소 전용으로, 하체일 다음 날은 제외 */
-  const isLegSplit = (sp) => sp && sp.muscles && sp.muscles.includes('legs');
-  const restDays = [];
-  for(let d=0; d<7; d++) if(!days.includes(d)) restDays.push(d);
+  /* 장비·목표별 유산소 설명 */
+  const cardioDesc = equip==='gym'
+    ? (losing ? '런닝머신 4km (6분/km 페이스, 중강도)' : '런닝머신 3km (7분/km 가벼운 페이스)')
+    : equip==='home'
+    ? (losing ? '야외 러닝 4km (6분/km 페이스)' : '빠른 걷기·조깅 3km')
+    : (losing ? '야외 러닝 4km (6분/km 페이스)' : '빠른 걷기 30분');
 
-  /* 하체일 다음 날 피해서 유산소 요일 선택 */
-  let cardioDays = new Set();
-  if(freq >= 3 && restDays.length > 0){
-    /* 훈련일 중 하체일 찾기 */
-    const legTrainDays = [];
-    let ti = 0;
-    for(let d=0; d<7; d++){
-      if(days.includes(d)){ if(isLegSplit(splits[ti])) legTrainDays.push(d); ti++; }
+  /* 유산소 배치 — 별도 날 추가 없이 운동일 내에 포함
+     주1~2회: 전체 운동일에 유산소
+     주3~4회: 비하체 운동일 2일에 유산소
+     주5~6회: 비하체 운동일 1일에 유산소 */
+  const maxCardio = freq <= 2 ? freq : freq <= 4 ? 2 : 1;
+  const isLeg = (sp) => sp && sp.muscles && sp.muscles.includes('legs');
+  const cardioOnDays = new Set();
+  let ti = 0;
+  for(let d=0; d<7 && cardioOnDays.size < maxCardio; d++){
+    if(days.includes(d)){
+      if(!isLeg(splits[ti])) cardioOnDays.add(d);
+      ti++;
     }
-    const afterLeg = new Set(legTrainDays.map(d=>(d+1)%7));
-    const goodRest = restDays.filter(d => !afterLeg.has(d));
-    const cardioPool = goodRest.length ? goodRest : restDays;
-    /* 최대 2일만 유산소 */
-    for(let i=0; i<Math.min(2, cardioPool.length); i++) cardioDays.add(cardioPool[i]);
   }
 
+  const week = [];
   let splitIdx = 0;
   for(let d=0; d<7; d++){
     if(days.includes(d)){
       const sp = splits[splitIdx++];
       const lines = buildExercises(sp.muscles, plan.equip).map(e=>({n:e[0], s:e[1]}));
-      /* 주1~2회: 운동일 마다 유산소 추가 */
-      if(freq <= 2) lines.push({n:cardioTxt, s:'운동 마무리'});
+      if(cardioOnDays.has(d)) lines.push({n:cardioDesc, s:'운동 마무리'});
       week.push({day:WEEKDAYS[d], type:'train', focus:sp.name, ex:lines});
-    } else if(cardioDays.has(d)){
-      week.push({day:WEEKDAYS[d], type:'cardio', focus:'유산소 / 회복',
-        ex:[{n:cardioTxt, s:''},{n:'스트레칭·폼롤러', s:'10분'}]});
     } else {
       week.push({day:WEEKDAYS[d], type:'rest', focus:'휴식', ex:[]});
     }
@@ -887,14 +901,14 @@ function renderPosture(p, aiText){
         <div class="val"><b style="color:${col}">${p.score}</b><span>자세 점수</span></div>
       </div>
       <div class="pname">${m.name}</div>
-      <div class="pmeta">${p.real ? '📷 카메라 실시간 분석' : '체형 · 자세 균형 분석'}</div>
+      <div class="pmeta">${p.real ? '카메라 실시간 분석' : '체형 · 자세 균형 분석'}</div>
     </div>
     ${lastPosePhoto ? `<div class="pose-photo"><img src="${lastPosePhoto}" alt="촬영 사진"/></div>` : ''}
     ${poseDiagram(p)}`;
 
   let html = `<div class="ai-head"><span class="ai-badge">자세 분석</span><h2>${m.name}님 체형 리포트</h2></div>`;
   if(!p.real){
-    html += `<div class="ai-item" style="border-left-color:#f59e0b;margin-bottom:6px"><div class="d" style="color:var(--ink)">⚠ 카메라 인식이 어려워 데모 데이터로 표시합니다. 몸 전체가 보이게 다시 촬영해보세요.</div></div>`;
+    html += `<div class="ai-item" style="border-left-color:#f59e0b;margin-bottom:6px"><div class="d" style="color:var(--ink)">카메라 인식이 어려워 데모 데이터로 표시합니다. 몸 전체가 보이게 다시 촬영해보세요.</div></div>`;
   }
   html += poseSideRow('어깨 균형', p.shDeg, 1, 2.5);
   html += poseSideRow('골반 균형', p.pelDeg, 1, 2.5);
@@ -910,8 +924,8 @@ function renderPosture(p, aiText){
     if(Math.abs(p.headDeg)>=1.5) fixes.push({t:'목·머리 정렬', d:'기울어진 반대쪽 목 측면 스트레칭과 턱 당기기(친턱) 운동으로 목 정렬을 잡아주세요.'});
     if(p.legDiff>=4) fixes.push({t:'골반·다리 균형', d:'골반 교정 스트레칭과 한쪽 둔근 강화로 좌우 균형을 맞춰주세요.'});
     fixes.push({t:'코어 안정화', d:'플랭크·데드버그로 몸통을 잡아주면 전반적인 정렬 유지에 도움이 됩니다.'});
-    html += `<div class="ai-item" style="border-left-color:#f59e0b;margin:8px 0"><div class="d">⚠ AI 서버 연결 실패 — 임시 추천을 표시합니다.</div></div>`;
-    html += `<div class="ai-section"><h3><span class="em">🧘</span> 교정 추천</h3><div class="routine-grid">
+    html += `<div class="ai-item" style="border-left-color:#f59e0b;margin:8px 0"><div class="d">AI 서버 연결 실패 — 임시 추천을 표시합니다.</div></div>`;
+    html += `<div class="ai-section"><h3>교정 추천</h3><div class="routine-grid">
       ${fixes.slice(0,4).map(f=>`<div class="ai-item" style="border-radius:0 14px 14px 0"><div class="t" style="font-weight:800;font-size:16px">${f.t}</div><div class="d">${f.d}</div></div>`).join('')}
     </div></div>`;
   }
@@ -1214,12 +1228,12 @@ function renderResult(type, aiText){
     /* Claude 연결 실패 시 임시 규칙 기반 추천 */
     const diet = fakeDiet(m);
     html = `<div class="ai-head"><span class="ai-badge" style="background:#f59e0b">추천 엔진</span><h2>${m.name}님 맞춤 리포트</h2></div>`;
-    html += `<div class="ai-item" style="border-left-color:#f59e0b;margin:12px 0"><div class="d">⚠ AI 서버 연결에 실패해 임시 추천을 표시합니다.</div></div>`;
+    html += `<div class="ai-item" style="border-left-color:#f59e0b;margin:12px 0"><div class="d">AI 서버 연결 실패 — 임시 추천을 표시합니다.</div></div>`;
     html += `<div class="ai-item" style="border-left-color:${scoreColor}"><div class="d" style="color:var(--ink);font-size:16px">${diet.tip}</div></div>`;
     if(type==='exercise' || type==='full'){
       const week = buildWeek();
       html += `<div class="ai-section">
-        <h3><span class="em">🏋️</span> 주간 운동 루틴</h3>
+        <h3>주간 운동 루틴</h3>
         <div class="plan-sum"><span>주 ${plan.freq}회</span><span>${EQUIP_LABEL[plan.equip]}</span><span>${CARDIO_LABEL[plan.cardio]}</span></div>
         <div class="routine-grid">
           ${week.map(d=>{
@@ -1230,7 +1244,7 @@ function renderResult(type, aiText){
         </div></div>`;
     }
     if(type==='diet' || type==='full'){
-      html += `<div class="ai-section"><h3><span class="em">🥗</span> 하루 추천 식단</h3><div class="meal-grid">
+      html += `<div class="ai-section"><h3>하루 추천 식단</h3><div class="meal-grid">
         ${diet.meals.map(x=>`<div class="meal"><div class="when">${x.when}</div><div class="food">${x.food.replace(/\n/g,'<br/>')}</div></div>`).join('')}
       </div></div>`;
     }
