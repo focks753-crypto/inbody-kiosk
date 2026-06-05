@@ -88,30 +88,40 @@
   @keyframes pulse { 0%,100%{ box-shadow:0 20px 50px rgba(0,0,0,.25);} 50%{ box-shadow:0 20px 70px rgba(0,0,0,.4);} }
 
   /* ---------- 결과 + 카테고리 화면 ---------- */
-  #resultSelect { padding: 36px 48px; }
-  .rs-wrap { display: grid; grid-template-columns: 360px 1fr; gap: 28px; flex: 1; overflow: hidden; margin-top: 12px; }
-  .rs-left { background: var(--card); border-radius: 28px; padding: 28px; box-shadow: 0 8px 24px rgba(15,23,42,.07); overflow-y: auto; }
-  .rs-right { display: flex; flex-direction: column; gap: 16px; overflow: hidden; }
-  .rs-right .rs-head { font-size: 28px; font-weight: 900; letter-spacing: -.5px; flex-shrink: 0; }
-  .rs-right .rs-sub { color: var(--slate); font-size: 17px; font-weight: 500; margin-top: 4px; flex-shrink: 0; }
-  .rs-cats { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; flex: 1; min-height: 0; }
+  #resultSelect { padding: 28px 40px; }
+  .rs-wrap { display: grid; grid-template-columns: 280px 1fr 200px; gap: 22px; flex: 1; overflow: hidden; margin-top: 10px; }
+  /* 왼쪽: 인바디 수치 */
+  .rs-left { background: var(--card); border-radius: 24px; padding: 22px; box-shadow: 0 8px 24px rgba(15,23,42,.07); overflow-y: auto; }
+  /* 가운데: AI 분석 요약 */
+  .rs-center { background: var(--card); border-radius: 24px; padding: 28px 32px; box-shadow: 0 8px 24px rgba(15,23,42,.07); overflow-y: auto; display: flex; flex-direction: column; }
+  .rs-center .ai-tag { display: inline-flex; align-items: center; gap: 8px; background: var(--grad); color: #fff; font-weight: 800; font-size: 14px; padding: 6px 16px; border-radius: 999px; margin-bottom: 18px; width: fit-content; }
+  .rs-center .ai-title { font-size: 26px; font-weight: 900; letter-spacing: -.5px; margin-bottom: 16px; }
+  .rs-center .ai-summary { font-size: 17px; line-height: 1.8; color: var(--ink); flex: 1; }
+  .rs-center .ai-summary b { color: var(--blue); font-weight: 800; }
+  .rs-center .ai-summary .ai-pt { margin-bottom: 14px; padding: 14px 18px; border-radius: 14px; background: #f8fafc; border-left: 4px solid var(--blue); }
+  .rs-center .ai-summary .ai-pt.warn { border-left-color: var(--warn); }
+  .rs-center .ai-summary .ai-pt.good { border-left-color: var(--good); }
+  /* 오른쪽: 카테고리 버튼 */
+  .rs-right { display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+  .rs-right .rs-label { font-size: 13px; font-weight: 800; color: var(--slate); text-align: center; letter-spacing: .5px; text-transform: uppercase; }
   .rs-cat {
-    background: var(--card); border-radius: 24px; padding: 22px 18px; cursor: pointer; text-align: center;
-    box-shadow: 0 8px 22px rgba(15,23,42,.07); border: 2px solid transparent;
+    background: var(--card); border-radius: 18px; padding: 16px 12px; cursor: pointer; text-align: center;
+    box-shadow: 0 4px 14px rgba(15,23,42,.07); border: 2px solid transparent;
     transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; flex: 1;
   }
   .rs-cat:active { transform: scale(.97); border-color: var(--blue); }
-  .rs-cat:hover { border-color: rgba(37,99,235,.3); box-shadow: 0 12px 32px rgba(15,23,42,.12); }
-  .rs-ico { width: 68px; height: 68px; border-radius: 20px; display: grid; place-items: center; font-size: 36px; flex-shrink: 0; }
-  .rs-cat h3 { font-size: 22px; font-weight: 900; }
-  .rs-cat p { color: var(--slate); font-size: 14px; font-weight: 500; line-height: 1.4; }
-  .rs-metric { margin-top: 16px; }
-  .rs-metric .row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+  .rs-cat:hover { border-color: rgba(37,99,235,.3); box-shadow: 0 8px 22px rgba(15,23,42,.12); }
+  .rs-ico { width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; font-size: 24px; flex-shrink: 0; }
+  .rs-cat h3 { font-size: 15px; font-weight: 900; }
+  .rs-cat p { color: var(--slate); font-size: 11px; font-weight: 500; line-height: 1.3; display: none; }
+  /* 수치 */
+  .rs-metric { margin-top: 14px; }
+  .rs-metric .row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #f1f5f9; }
   .rs-metric .row:last-child { border-bottom: none; }
-  .rs-metric .lbl { font-size: 16px; font-weight: 700; color: var(--slate); }
-  .rs-metric .val { font-size: 20px; font-weight: 900; color: var(--ink); }
-  .rs-metric .unit { font-size: 13px; font-weight: 600; color: var(--slate); margin-left: 3px; }
+  .rs-metric .lbl { font-size: 15px; font-weight: 700; color: var(--slate); }
+  .rs-metric .val { font-size: 18px; font-weight: 900; color: var(--ink); }
+  .rs-metric .unit { font-size: 12px; font-weight: 600; color: var(--slate); margin-left: 2px; }
 
   /* ---------- Headings ---------- */
   .head { margin: 12px 0 18px; flex-shrink: 0; }
@@ -350,45 +360,42 @@
       <div class="clock"><div class="t" id="clockRS">--:--</div></div>
     </div>
     <div class="rs-wrap">
-      <!-- 왼쪽: 인바디 결과 -->
+      <!-- 왼쪽: 인바디 수치 -->
       <div class="rs-left" id="rsInbodyPanel"></div>
-      <!-- 오른쪽: 카테고리 선택 -->
-      <div class="rs-right">
-        <div class="rs-head" id="rsHello">분석 항목을 선택하세요</div>
-        <div class="rs-sub">원하는 서비스를 터치해주세요</div>
-        <div class="rs-cats">
-          <div class="rs-cat" onclick="openOptions('exercise')">
-            <div class="rs-ico" style="background:#dbeafe">🏋️</div>
-            <h3>AI 운동루틴</h3>
-            <p>체성분에 맞춘<br/>맞춤 주간 루틴</p>
-          </div>
-          <div class="rs-cat" onclick="analyze('diet')">
-            <div class="rs-ico" style="background:#dcfce7">🥗</div>
-            <h3>AI 맞춤식단</h3>
-            <p>목표 달성을 위한<br/>하루 식단 가이드</p>
-          </div>
-          <div class="rs-cat" onclick="openOptions('full')">
-            <div class="rs-ico" style="background:#fef3c7">📊</div>
-            <h3>종합 분석</h3>
-            <p>운동 + 식단을<br/>한 번에</p>
-          </div>
-          <div class="rs-cat" onclick="openPosture()">
-            <div class="rs-ico" style="background:#ede9fe">📷</div>
-            <h3>AI 체형분석</h3>
-            <p>자세·균형<br/>카메라 분석</p>
-          </div>
-        </div>
+      <!-- 가운데: AI 분석 요약 -->
+      <div class="rs-center" id="rsAiPanel">
+        <div class="ai-tag">✨ AI 분석</div>
+        <div class="ai-title" id="rsHello">측정 결과를 분석하고 있어요</div>
+        <div class="ai-summary" id="rsAiSummary">분석 중...</div>
       </div>
-    </div>
-    <div style="text-align:center;margin-top:16px">
-      <button class="btn-back" onclick="go('start')" style="font-size:16px">← 처음으로</button>
+      <!-- 오른쪽: 카테고리 버튼 -->
+      <div class="rs-right">
+        <div class="rs-label">상세 분석 선택</div>
+        <div class="rs-cat" onclick="openOptions('exercise')">
+          <div class="rs-ico" style="background:#dbeafe">🏋️</div>
+          <h3>AI 운동루틴</h3>
+        </div>
+        <div class="rs-cat" onclick="analyze('diet')">
+          <div class="rs-ico" style="background:#dcfce7">🥗</div>
+          <h3>AI 맞춤식단</h3>
+        </div>
+        <div class="rs-cat" onclick="openOptions('full')">
+          <div class="rs-ico" style="background:#fef3c7">📊</div>
+          <h3>종합 분석</h3>
+        </div>
+        <div class="rs-cat" onclick="openPosture()">
+          <div class="rs-ico" style="background:#ede9fe">📷</div>
+          <h3>AI 체형분석</h3>
+        </div>
+        <button class="btn-back" onclick="go('start')" style="font-size:14px;margin-top:4px">← 처음으로</button>
+      </div>
     </div>
   </section>
 
   <!-- CATEGORY -->
   <section id="category" class="screen">
     <div class="topbar">
-      <button class="btn-back" onclick="go('member')">← 회원 선택</button>
+      <button class="btn-back" onclick="go('resultSelect')">← 다시 선택</button>
       <div class="clock"><div class="t" id="clock3">--:--</div></div>
     </div>
     <div class="head"><h1 id="catHello">무엇을 도와드릴까요?</h1><p>원하는 분석 항목을 선택해주세요</p></div>
@@ -415,7 +422,7 @@
   <!-- OPTIONS (운동 조건 선택) -->
   <section id="options" class="screen">
     <div class="topbar">
-      <button class="btn-back" onclick="go('category')">← 다시 선택</button>
+      <button class="btn-back" onclick="go('resultSelect')">← 다시 선택</button>
       <div class="clock"><div class="t" id="clock5">--:--</div></div>
     </div>
     <div class="head"><h1>운동 계획을 세워볼게요</h1><p>선택하신 조건에 맞춰 월~일 주간 루틴을 짜드립니다</p></div>
@@ -453,13 +460,29 @@
     <div class="cam-stage" id="camStage">
       <video id="camVideo" playsinline autoplay muted></video>
       <canvas id="camCanvas"></canvas>
-      <svg class="cam-guide" viewBox="0 0 240 300" preserveAspectRatio="xMidYMid meet">
+      <svg class="cam-guide" viewBox="0 0 240 520" preserveAspectRatio="xMidYMid meet">
         <g class="guideFig">
-          <circle cx="120" cy="62" r="40"/>
-          <rect x="108" y="98" width="24" height="22" rx="9"/>
-          <path d="M58 152 Q120 116 182 152 L168 296 Q120 308 72 296 Z"/>
-          <rect x="44" y="150" width="22" height="150" rx="11" transform="rotate(14 55 158)"/>
-          <rect x="174" y="150" width="22" height="150" rx="11" transform="rotate(-14 185 158)"/>
+          <!-- 머리 -->
+          <circle cx="120" cy="44" r="32"/>
+          <!-- 목 -->
+          <rect x="112" y="72" width="16" height="18" rx="7"/>
+          <!-- 몸통 -->
+          <path d="M66 100 Q120 82 174 100 L162 240 Q120 252 78 240 Z"/>
+          <!-- 왼팔 -->
+          <rect x="46" y="98" width="18" height="130" rx="9" transform="rotate(16 55 106)"/>
+          <!-- 오른팔 -->
+          <rect x="176" y="98" width="18" height="130" rx="9" transform="rotate(-16 185 106)"/>
+          <!-- 왼 허벅지 -->
+          <rect x="88" y="238" width="20" height="120" rx="10" transform="rotate(4 98 250)"/>
+          <!-- 오른 허벅지 -->
+          <rect x="132" y="238" width="20" height="120" rx="10" transform="rotate(-4 142 250)"/>
+          <!-- 왼 종아리 -->
+          <rect x="84" y="354" width="18" height="110" rx="9" transform="rotate(-3 93 404)"/>
+          <!-- 오른 종아리 -->
+          <rect x="138" y="354" width="18" height="110" rx="9" transform="rotate(3 147 404)"/>
+          <!-- 발 -->
+          <ellipse cx="93" cy="470" rx="22" ry="9"/>
+          <ellipse cx="147" cy="470" rx="22" ry="9"/>
         </g>
       </svg>
       <div class="cam-frame"></div>
@@ -678,16 +701,49 @@ function computePosture(lm){
 
 function poseDiagram(p){
   const cl = (d,m)=>Math.max(-m, Math.min(m, d));
-  const sh = cl(p.shDeg,18), pel = cl(p.pelDeg,18), head = cl(p.headDeg*1.6,12);
-  return `<div class="pose-diagram"><svg viewBox="0 0 200 170">
-    <line x1="100" y1="8" x2="100" y2="162" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="5 5"/>
-    <circle cx="${100+head}" cy="34" r="15" fill="#dbeafe" stroke="#3b82f6" stroke-width="2.5"/>
-    <line x1="100" y1="70" x2="100" y2="120" stroke="#94a3b8" stroke-width="3"/>
-    <g transform="rotate(${sh} 100 70)"><line x1="58" y1="70" x2="142" y2="70" stroke="#2563eb" stroke-width="6" stroke-linecap="round"/><circle cx="58" cy="70" r="6" fill="#2563eb"/><circle cx="142" cy="70" r="6" fill="#2563eb"/></g>
-    <g transform="rotate(${pel} 100 120)"><line x1="70" y1="120" x2="130" y2="120" stroke="#06b6d4" stroke-width="6" stroke-linecap="round"/><circle cx="70" cy="120" r="6" fill="#06b6d4"/><circle cx="130" cy="120" r="6" fill="#06b6d4"/></g>
-  </svg>
-  <div class="pose-legend"><span><i style="background:#2563eb"></i>어깨선</span><span><i style="background:#06b6d4"></i>골반선</span><span><i style="background:#cbd5e1"></i>중심선</span></div>
-  </div>`;
+  const sh = cl(p.shDeg,20), pel = cl(p.pelDeg,20), head = cl(p.headDeg*1.5,14);
+  /* 기울기 각도 → 픽셀 오프셋 */
+  const shOff = sh * 1.8, pelOff = pel * 1.8, headOff = head * 1.2;
+  /* 어깨선 끝점 */
+  const shRad = sh * Math.PI / 180;
+  const shLen = 46;
+  const shLx = 100 - Math.cos(shRad)*shLen, shLy = 72 - Math.sin(shRad)*shLen;
+  const shRx = 100 + Math.cos(shRad)*shLen, shRy = 72 + Math.sin(shRad)*shLen;
+  /* 골반선 끝점 */
+  const pelRad = pel * Math.PI / 180;
+  const pelLen = 36;
+  const pelLx = 100 - Math.cos(pelRad)*pelLen, pelLy = 124 - Math.sin(pelRad)*pelLen;
+  const pelRx = 100 + Math.cos(pelRad)*pelLen, pelRy = 124 + Math.sin(pelRad)*pelLen;
+  /* 기울기 라벨 색 */
+  const shCol = Math.abs(sh)>2.5 ? '#ef4444' : Math.abs(sh)>1 ? '#f59e0b' : '#10b981';
+  const pelCol = Math.abs(pel)>2.5 ? '#ef4444' : Math.abs(pel)>1 ? '#f59e0b' : '#10b981';
+  const headCol = Math.abs(p.headDeg)>2.5 ? '#ef4444' : Math.abs(p.headDeg)>1 ? '#f59e0b' : '#10b981';
+  return `<div class="pose-diagram"><svg viewBox="0 0 220 180">
+    <!-- 중심 기준선 -->
+    <line x1="110" y1="6" x2="110" y2="174" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text x="112" y="12" font-size="9" fill="#94a3b8" font-weight="700">중심축</text>
+    <!-- 머리 -->
+    <circle cx="${110+headOff}" cy="26" r="16" fill="#dbeafe" stroke="${headCol}" stroke-width="2.5"/>
+    <!-- 척추 -->
+    <line x1="110" y1="72" x2="110" y2="124" stroke="#94a3b8" stroke-width="3"/>
+    <!-- 어깨선 + 각도 표시 -->
+    <line x1="${shLx+10}" y1="${shLy}" x2="${shRx+10}" y2="${shRy}" stroke="${shCol}" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="${shLx+10}" cy="${shLy}" r="5" fill="${shCol}"/>
+    <circle cx="${shRx+10}" cy="${shRy}" r="5" fill="${shCol}"/>
+    ${Math.abs(sh)>0.3 ? `<text x="${sh>0?shRx+14:shLx-28}" y="${sh>0?shRy+4:shLy+4}" font-size="10" fill="${shCol}" font-weight="800">${Math.abs(p.shDeg).toFixed(1)}°</text>` : ''}
+    <!-- 골반선 + 각도 표시 -->
+    <line x1="${pelLx+10}" y1="${pelLy}" x2="${pelRx+10}" y2="${pelRy}" stroke="${pelCol}" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="${pelLx+10}" cy="${pelLy}" r="5" fill="${pelCol}"/>
+    <circle cx="${pelRx+10}" cy="${pelRy}" r="5" fill="${pelCol}"/>
+    ${Math.abs(pel)>0.3 ? `<text x="${pel>0?pelRx+14:pelLx-28}" y="${pel>0?pelRy+4:pelLy+4}" font-size="10" fill="${pelCol}" font-weight="800">${Math.abs(p.pelDeg).toFixed(1)}°</text>` : ''}
+    <!-- 범례 -->
+    <rect x="2" y="160" width="10" height="4" rx="2" fill="#2563eb"/>
+    <text x="15" y="166" font-size="9" fill="#64748b">어깨</text>
+    <rect x="50" y="160" width="10" height="4" rx="2" fill="#06b6d4"/>
+    <text x="63" y="166" font-size="9" fill="#64748b">골반</text>
+    <line x1="100" y1="162" x2="110" y2="162" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="3 2"/>
+    <text x="113" y="166" font-size="9" fill="#64748b">기준</text>
+  </svg></div>`;
 }
 
 function poseSideRow(label, signedDeg, goodT, warnT){
@@ -767,7 +823,7 @@ function go(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
-function goBackFromResult(){ go(lastType==='diet' ? 'category' : 'options'); }
+function goBackFromResult(){ go('resultSelect'); }
 
 function renderMembers(){
   const g = document.getElementById('memberGrid');
@@ -978,7 +1034,7 @@ async function doCapture(){
 function closePosture(){
   if(countTimer){ clearInterval(countTimer); countTimer = null; }
   const ce = document.getElementById('camCount'); if(ce){ ce.style.display='none'; ce.classList.remove('show'); }
-  stopCamera(); go('category');
+  stopCamera(); go('resultSelect');
 }
 
 function tagFor(value, goodMax, warnMax){
@@ -1090,6 +1146,46 @@ function inbodyFieldMap(d){
   return { id: 99, name, age: Math.round(age), sex, height, weight, smm, bfp, bmi, score: Math.round(score), target };
 }
 
+/* AI 기본 분석 요약 생성 */
+function buildAiSummary(m){
+  const losing = m.bfp >= (m.sex==='여' ? 28 : 20);
+  const lowMuscle = m.smm < (m.sex==='여' ? 20 : 30);
+  const goodScore = m.score >= 80;
+  const kcal = Math.round(m.weight * (losing ? 30 : 38));
+  const protein = Math.round(m.weight * (losing ? 1.6 : 2.0));
+
+  let pts = [];
+  pts.push(`<div class="ai-pt ${goodScore?'good':'warn'}">
+    <b>인바디 점수 ${m.score}점</b> — ${goodScore ? '전반적으로 양호한 체성분입니다.' : '체성분 개선이 필요한 상태입니다.'} 목표: <b>${m.target}</b>
+  </div>`);
+
+  if(losing){
+    pts.push(`<div class="ai-pt warn">
+      <b>체지방률 ${m.bfp}%</b> — 정상 범위보다 높습니다. 하루 <b>${kcal}kcal</b> 이내로 섭취하고, 단백질은 <b>${protein}g</b> 이상 유지하세요.
+    </div>`);
+  } else {
+    pts.push(`<div class="ai-pt good">
+      <b>체지방률 ${m.bfp}%</b> — 양호한 수준입니다. 근육 성장을 위해 하루 <b>${kcal}kcal</b>, 단백질 <b>${protein}g</b>을 목표로 하세요.
+    </div>`);
+  }
+
+  if(lowMuscle){
+    pts.push(`<div class="ai-pt warn">
+      <b>골격근량 ${m.smm}kg</b> — 근육량이 부족합니다. 주 3회 이상 근력운동과 충분한 단백질 섭취로 근육을 늘려야 합니다.
+    </div>`);
+  } else {
+    pts.push(`<div class="ai-pt good">
+      <b>골격근량 ${m.smm}kg</b> — 근육량이 양호합니다. 현재 수준을 유지하면서 체성분 목표에 집중하세요.
+    </div>`);
+  }
+
+  pts.push(`<div class="ai-pt" style="border-left-color:var(--cyan)">
+    오른쪽 메뉴에서 <b>AI 운동루틴</b> 또는 <b>AI 맞춤식단</b>을 선택하면 개인화된 상세 분석을 받을 수 있습니다.
+  </div>`);
+
+  return pts.join('');
+}
+
 function renderRsInbody(m){
   const circ = 2*Math.PI*70, off = circ*(1-m.score/100);
   const col = m.score>=80?'#10b981':m.score>=70?'#f59e0b':'#ef4444';
@@ -1138,8 +1234,10 @@ async function pollInbodyData(){
     try {
       const displayName = (current.name && current.name !== String(current.id)) ? current.name : '회원';
       const el = document.getElementById('rsHello');
-      if(el) el.textContent = `${displayName}님, 분석 항목을 선택하세요`;
+      if(el) el.textContent = `${displayName}님의 측정 결과`;
       renderRsInbody(current);
+      const summary = document.getElementById('rsAiSummary');
+      if(summary) summary.innerHTML = buildAiSummary(current);
     } catch(renderErr){
       console.error('renderRsInbody 오류:', renderErr);
     }
